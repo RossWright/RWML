@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\RossWright.MetalNexus.targets" />
+	
+	<PropertyGroup>
+		<Description>Client-side package for MetalNexus</Description>
+	</PropertyGroup>
+
+	<ItemGroup>
+    <ProjectReference Include="..\..\MetalChain\RossWright.MetalChain\RossWright.MetalChain.csproj" />
+		<ProjectReference Include="..\RossWright.MetalNexus.Abstractions\RossWright.MetalNexus.Abstractions.csproj" />
+    <ProjectReference Include="..\..\MetalCommand\RossWright.MetalCommand.Abstractions\RossWright.MetalCommand.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

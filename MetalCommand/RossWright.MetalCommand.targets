@@ -1,0 +1,16 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<Import Project="..\RossWright.Metal.targets" />
+
+	<PropertyGroup>
+		<Title>MetalCommand by Ross Wright</Title>
+		<Product>MetalCommand</Product>
+	</PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+</Project>

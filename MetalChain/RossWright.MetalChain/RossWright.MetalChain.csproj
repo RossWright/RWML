@@ -1,0 +1,11 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\RossWright.MetalChain.targets" />
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\MetalCore\RossWright.MetalCore\RossWright.MetalCore.csproj" />
+    <ProjectReference Include="..\..\MetalInjection\RossWright.MetalInjection.Abstractions\RossWright.MetalInjection.Abstractions.csproj" />
+    <ProjectReference Include="..\RossWright.MetalChain.Abstractions\RossWright.MetalChain.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	
+	<Import Project="..\RossWright.MetalCore.targets" />
+	
+	<PropertyGroup>
+		<RootNamespace>RossWright</RootNamespace>
+	</PropertyGroup>
+	
+	<ItemGroup>
+	  <None Remove="GeoCoder\zipcodelatlongs.txt" />
+	</ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Include="GeoCoder\zipcodelatlongs.txt" />
+	</ItemGroup>
+
+  <Import Project="..\..\EfCore.targets" />
+
+  <ItemGroup>
+		<PackageReference Include="Geolocation" Version="1.2.1" />
+	</ItemGroup>
+	
+	<ItemGroup>
+		<ProjectReference Include="..\RossWright.MetalCore\RossWright.MetalCore.csproj" />
+	</ItemGroup>
+
+</Project>

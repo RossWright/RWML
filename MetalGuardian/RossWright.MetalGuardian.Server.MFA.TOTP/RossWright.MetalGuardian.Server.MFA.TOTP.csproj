@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\RossWright.MetalGuardian.targets" />
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Otp.NET" Version="1.4.1" />
+    <PackageReference Include="QRCoder" Version="1.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RossWright.MetalGuardian.MFA.TOTP\RossWright.MetalGuardian.MFA.TOTP.csproj" />
+    <ProjectReference Include="..\RossWright.MetalGuardian.Server\RossWright.MetalGuardian.Server.csproj" />
+  </ItemGroup>
+
+</Project>

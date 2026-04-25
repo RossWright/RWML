@@ -1,0 +1,35 @@
+﻿namespace RossWright.MetalInjection;
+
+/// <summary>
+/// Marks a property or constructor parameter for explicit injection by MetalInjection
+/// when the owning type is activated through the container or via <see cref="ActivatorUtilities"/>.
+/// <para>
+/// On <b>properties</b>: the property must have a setter (public or non-public).
+/// Required vs optional is determined by nullability unless overridden by <see cref="Optional"/>.
+/// </para>
+/// <para>
+/// On <b>constructor parameters</b>: an alternative to
+/// <see cref="Microsoft.Extensions.DependencyInjection.FromKeyedServicesAttribute"/> that also
+/// supports the <see cref="Optional"/> flag and is consistent with property injection.
+/// </para>
+/// </summary>
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
+public class InjectAttribute(object? key = null, bool? optional = null)
+    : Attribute
+{
+    /// <summary>
+    /// The optional keyed-service key used to resolve this property or parameter.
+    /// When <see langword="null"/> the target is resolved as an unkeyed service.
+    /// </summary>
+    public object? Key { get; } = key;
+
+    /// <summary>
+    /// Overrides nullability-based optional/required detection.
+    /// <list type="bullet">
+    ///   <item><see langword="true"/> — optional: a missing service leaves the target at its default value.</item>
+    ///   <item><see langword="false"/> — required: a missing service throws regardless of nullability.</item>
+    ///   <item><see langword="null"/> — defer to nullability (default behaviour).</item>
+    /// </list>
+    /// </summary>
+    public bool? Optional { get; } = optional;
+}

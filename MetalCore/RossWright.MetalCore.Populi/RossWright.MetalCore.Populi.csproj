@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\RossWright.MetalCore.targets" />
+
+  <PropertyGroup>
+    <RootNamespace>RossWright</RootNamespace>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	
+	<Import Project="..\RossWright.MetalGuardian.targets" />
+	
+	<ItemGroup>
+	  <ProjectReference Include="..\..\MetalNexus\RossWright.MetalNexus.Abstractions\RossWright.MetalNexus.Abstractions.csproj" />
+	</ItemGroup>
+  
+</Project>

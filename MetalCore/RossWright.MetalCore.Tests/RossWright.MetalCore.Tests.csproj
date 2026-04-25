@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\RossWright.Metal.Tests.targets" />
+
+	<ItemGroup>
+		<ProjectReference Include="..\RossWright.MetalCore\RossWright.MetalCore.csproj" />
+	</ItemGroup>
+
+</Project>

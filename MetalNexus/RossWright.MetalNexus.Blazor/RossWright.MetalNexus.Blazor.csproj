@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <Import Project="..\RossWright.MetalNexus.targets" />
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+  
+  <PropertyGroup>
+    <Description>MetalNexus client-side library for Blazor apps</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\MetalCore\RossWright.MetalCore.Blazor\RossWright.MetalCore.Blazor.csproj" />
+    <ProjectReference Include="..\..\MetalGuardian\RossWright.MetalGuardian.Abstractions\RossWright.MetalGuardian.Abstractions.csproj" />
+    <ProjectReference Include="..\RossWright.MetalNexus\RossWright.MetalNexus.csproj" />
+  </ItemGroup>
+
+
+</Project>

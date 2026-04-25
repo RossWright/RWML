@@ -1,0 +1,65 @@
+﻿@page "/"
+
+<PageTitle>Home</PageTitle>
+
+
+<MudCard>
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">Storage Set</MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudTextField @bind-Value="_setKey" Label="Key" />
+        <MudTextField @bind-Value="_setValue" Label="Value" />
+    </MudCardContent>
+    <MudCardActions>
+        <MudButton OnClick="() => OnSet()">Set</MudButton>
+    </MudCardActions>
+</MudCard>
+
+<MudCard>
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">Storage Get</MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudTextField @bind-Value="_getKey" Label="Key" />
+        <MudText>@_getValue</MudText>
+    </MudCardContent>
+    <MudCardActions>
+        <MudButton OnClick="OnGet">Get</MudButton>
+    </MudCardActions>
+</MudCard>
+
+<MudCard>
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">Storage Remove/Clear</MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudTextField @bind-Value="_removeKey" Label="Key" />
+    </MudCardContent>
+    <MudCardActions>
+        <MudButton OnClick="OnRemove">Remove</MudButton>
+        <MudButton OnClick="OnClear">Clear</MudButton>
+    </MudCardActions>
+</MudCard>
+
+@code {
+    [Inject] private IBrowserLocalStorage _storage { get; set; } = null!;
+
+    private string _setKey = "testKey";
+    private string _setValue = "testValue";
+    private async Task OnSet() => await _storage.Set(_setKey, _setValue);
+
+    private string _getKey = "testKey";
+    private string? _getValue;
+    private async Task OnGet() => _getValue = (await _storage.Get(_getKey)) ?? "<null>";
+
+    private string _removeKey = "testKey";
+    private async Task OnRemove() => await _storage.Remove(_removeKey);
+    private async Task OnClear() => await _storage.Clear();
+}

@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\RossWright.MetalInjection.targets" />
+
+  <ItemGroup>
+    <Compile Include="..\..\InternalKey.cs" Link="InternalKey.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RossWright.MetalInjection\RossWright.MetalInjection.csproj" />
+  </ItemGroup>
+
+</Project>

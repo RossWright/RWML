@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\RossWright.MetalShout.targets" />
+
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+	
+	<ItemGroup>
+    <ProjectReference Include="..\..\MetalChain\RossWright.MetalChain\RossWright.MetalChain.csproj" />
+    <ProjectReference Include="..\..\MetalCore\RossWright.MetalCore.Server\RossWright.MetalCore.Server.csproj" />
+    <ProjectReference Include="..\..\MetalGuardian\RossWright.MetalGuardian.Server\RossWright.MetalGuardian.Server.csproj" />
+		<ProjectReference Include="..\RossWright.MetalShout\RossWright.MetalShout.csproj" />
+	</ItemGroup>
+
+</Project>
