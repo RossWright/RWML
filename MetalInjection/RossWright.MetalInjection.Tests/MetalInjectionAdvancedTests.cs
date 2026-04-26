@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
-using RossWright.MetalCommand;
 using System.Reflection;
 using Xunit;
 
@@ -340,62 +339,4 @@ public class ServiceProviderFactoryTests
         Assert.IsType<FactoryT1SvcImpl>(factoryProvider.GetService<IFactoryT1Svc>());
         Assert.IsType<FactoryT1SvcImpl>(directProvider.GetService<IFactoryT1Svc>());
     }
-}
-
-// ── ConsoleApplicationBuilder integration tests ────────────────────────────────────────────────
-
-public interface IConsoleT2Svc { }
-
-[Singleton<IConsoleT2Svc>]
-public class ConsoleT2SvcImpl : IConsoleT2Svc { }
-
-public class ConsoleHostIntegrationTests
-{
-    [Fact]
-    public void AddMetalInjection_OnConsoleApplicationBuilder_RegistersScannedService()
-    {
-        Assembly mockAssembly = Substitute.For<Assembly>();
-        mockAssembly.GetTypes().Returns([typeof(ConsoleT2SvcImpl)]);
-
-        var builder = ConsoleApplication.CreateBuilder();
-        builder.AddMetalInjection(_ => _.ScanAssemblies(mockAssembly));
-        var app = builder.Build();
-
-        var result = app.Services.GetService<IConsoleT2Svc>();
-
-        Assert.NotNull(result);
-        Assert.IsType<ConsoleT2SvcImpl>(result);
-    }
-
-    [Fact]
-    public void AddMetalInjection_OnConsoleApplicationBuilder_ReturnsBuilder()
-    {
-        var builder = ConsoleApplication.CreateBuilder();
-
-        var returned = builder.AddMetalInjection();
-
-        Assert.Same(builder, returned);
-    }
-
-    [Fact]
-    public void AddMetalInjection_OnConsoleApplicationBuilder_ServiceProviderSupportsPropertyInjection()
-    {
-        Assembly mockAssembly = Substitute.For<Assembly>();
-        mockAssembly.GetTypes().Returns([typeof(ConsoleT2SvcImpl)]);
-
-        var builder = ConsoleApplication.CreateBuilder();
-        builder.AddMetalInjection(_ => _.ScanAssemblies(mockAssembly));
-        var app = builder.Build();
-
-        var target = new ConsoleT2PropertyTarget();
-        app.Services.InjectProperties(target);
-
-        Assert.NotNull(target.Svc);
-        Assert.IsType<ConsoleT2SvcImpl>(target.Svc);
-    }
-}
-
-public class ConsoleT2PropertyTarget
-{
-    [Inject] public IConsoleT2Svc? Svc { get; set; }
 }

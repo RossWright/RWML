@@ -7,10 +7,7 @@ Copyright (c) 2023-2026 Pross Co.
 - [MetalCore](#metalcore)
 - [MetalChain](#metalchain)
 - [MetalInjection](#metalinjection)
-- [MetalNexus](#metalnexus)
-- [MetalGuardian](#metalguardian)
-- [MetalShout](#metalshout)
-- [MetalCommand](#metalcommand)
+- [Future Libraries](#future-libraries)
 - [License](#license)
 
 ---
@@ -20,8 +17,6 @@ Copyright (c) 2023-2026 Pross Co.
 The **Ross Wright Metal Libraries** are a suite of foundational .NET packages for building modern, production-ready applications. They cover dependency injection, mediator-pattern request dispatching, utilities, test-data generation, and more — designed to work independently or together across server, Blazor WebAssembly, and console project types.
 
 All packages target **.NET 8, .NET 9, and .NET 10**. All extension methods live in the `RossWright` namespace (global-usings friendly).
-
-> **Note on pre-release libraries:** MetalNexus, MetalGuardian, MetalShout, and MetalCommand are marked as pre-release. These libraries are functional and have been used in commercial applications. However, documentation may be incomplete or out of sync with recent refactors, unit test coverage is limited, and recent refactors have not been rigorously tested. Use them with that in mind and expect rough edges. I'm working on fully documenting, stabilizing and getting good unit test coverage to include these libraries in the next minor release 2026.1.0
 
 ---
 
@@ -109,76 +104,37 @@ A ground-up dependency inversion container for .NET. MetalInjection is a complet
 
 ---
 
-## MetalNexus
+## Future Libraries
+The following Metal libraries are in active development and will be released in the coming months. All are designed to integrate seamlessly with the core MetalChain and MetalInjection libraries, but are decoupled so you can pick and choose which ones to use.
 
-MetalNexus bridges MetalChain across the network, transparently routing `IMediator.Send` calls from a client to server-side handlers over a RESTful API — with no separate HTTP client code to write. Decorate a request with `[ApiRequest]` and MetalNexus auto-generates the endpoint, handles serialization, and marshals exceptions back to the caller. It works with any MetalChain-compatible client: Blazor WebAssembly, MetalCommand console apps, or plain .NET.
-
-> **Pre-release version available, will release with 2026.1** — see the [MetalNexus README](MetalNexus/README.md) for full documentation.
-
-### Libraries
-
-| Package | NuGet | Description |
-|---|---|---|
-| [`RossWright.MetalNexus.Server`](MetalNexus/README.md#server-setup) | [NuGet](https://www.nuget.org/packages/RossWright.MetalNexus.Server) | ASP.NET Core server: auto-generates API endpoints for `[ApiRequest]`-decorated MetalChain requests, Swagger/OpenAPI integration, authentication hooks, file upload support |
-| [`RossWright.MetalNexus.Blazor`](MetalNexus/README.md#blazor-webassembly) | [NuGet](https://www.nuget.org/packages/RossWright.MetalNexus.Blazor) | Blazor WebAssembly client: `AddMetalNexusClient`, `AddHttpClient`, and `<FileInput>` upload component |
-| [`RossWright.MetalNexus`](MetalNexus/README.md#console-app-metalcommand) | [NuGet](https://www.nuget.org/packages/RossWright.MetalNexus) | Core client for console and other non-Blazor .NET projects |
-| [`RossWright.MetalNexus.Abstractions`](MetalNexus/README.md#defining-api-requests) | [NuGet](https://www.nuget.org/packages/RossWright.MetalNexus.Abstractions) | `[ApiRequest]` attribute and MetalNexus contracts only — for shared request-type projects with no runtime dependency |
-
----
-
-## MetalGuardian
-
-MetalGuardian is a complete authentication and authorization system purpose-built for the Metal stack. It provides ready-made MetalNexus endpoints and MetalChain handlers for login, logout, token refresh, role-based authorization, and multi-factor authentication (TOTP), letting you add a secure auth layer to a Metal application with minimal setup.
-
-> **Pre-release version available, will release with 2026.1** — see the [MetalGuardian README](MetalGuardian/README.md) for full documentation.
-
-### Libraries
-
-| Package | NuGet | Description |
-|---|---|---|
-| [`RossWright.MetalGuardian.Server`](MetalGuardian/README.md#server-setup) | [NuGet](https://www.nuget.org/packages/RossWright.MetalGuardian.Server) | ASP.NET Core server: authentication endpoints, JWT issuance, role-based authorization, MetalNexus integration |
-| [`RossWright.MetalGuardian.Blazor`](MetalGuardian/README.md#blazor-webassembly) | [NuGet](https://www.nuget.org/packages/RossWright.MetalGuardian.Blazor) | Blazor WebAssembly client: auth state management and secured MetalNexus request handling |
-| [`RossWright.MetalGuardian`](MetalGuardian/README.md#client-setup) | [NuGet](https://www.nuget.org/packages/RossWright.MetalGuardian) | Shared core: auth contracts and client-side logic for non-Blazor projects |
-| [`RossWright.MetalGuardian.MFA.TOTP`](MetalGuardian/README.md#totp-multi-factor-authentication) | [NuGet](https://www.nuget.org/packages/RossWright.MetalGuardian.MFA.TOTP) | TOTP multi-factor authentication support (compatible with Google Authenticator, Authy, etc.) |
-| [`RossWright.MetalGuardian.Server.MFA.TOTP`](MetalGuardian/README.md#totp-multi-factor-authentication) | [NuGet](https://www.nuget.org/packages/RossWright.MetalGuardian.Server.MFA.TOTP) | Server-side TOTP registration, verification, and recovery flow |
-| [`RossWright.MetalGuardian.Abstractions`](MetalGuardian/README.md#built-in-metalnexus-endpoints) | [NuGet](https://www.nuget.org/packages/RossWright.MetalGuardian.Abstractions) | Auth contracts only — for shared projects with no runtime dependency |
-
----
-
-## MetalShout
-
-MetalShout is the server-to-client push complement to MetalNexus. It uses SignalR under the hood to let server code dispatch MetalChain commands directly to connected clients, which handle them with ordinary `IRequestHandler` implementations. The result is real-time server push — event notifications, live data updates, progress reporting — using the same request/handler model as the rest of the Metal stack.
-
-> **Pre-release version available, will release with 2026.1** — see the [MetalShout README](MetalShout/README.md) for full documentation.
-
-### Libraries
-
-| Package | NuGet | Description |
-|---|---|---|
-| [`RossWright.MetalShout.Server`](MetalShout/README.md) | [NuGet](https://www.nuget.org/packages/RossWright.MetalShout.Server) | ASP.NET Core server: SignalR hub setup and `IMediator`-based push dispatch to connected clients |
-| [`RossWright.MetalShout`](MetalShout/README.md) | [NuGet](https://www.nuget.org/packages/RossWright.MetalShout) | Client library (Blazor and other .NET clients): connects to the SignalR hub and routes incoming pushes to registered MetalChain handlers |
-
----
-
-## MetalCommand
+### MetalCommand
 
 MetalCommand is a framework for building interactive .NET console applications. It provides a `ConsoleApplication` host builder that sets up configuration, DI, and a read-execute loop — independently of MetalChain and MetalInjection, though compatible with both. Commands are plain classes implementing `ICommand` that declare their own name, invocation aliases, argument schema, and help text. The runtime handles argument validation, default values, context-key substitution, Ctrl-C cancellation, and error reporting automatically.
 
 The companion data package adds EF Core integration with named, environment-aware database contexts (dev/staging/prod) and a suite of ready-made database management commands — migrate, load from CSV, obliterate, clear — that can be wired up in a single builder call.
 
-> **Pre-release version available, will release with 2026.1** — see the [MetalCommand README](MetalCommand/README.md) for full documentation.
+### MetalNexus
+MetalNexus bridges MetalChain across the network, transparently routing `IMediator.Send` calls from a client to server-side handlers over a RESTful API — with no separate HTTP client code to write. Decorate a request with `[ApiRequest]` and MetalNexus auto-generates the endpoint, handles serialization, and marshals exceptions back to the caller. It works with any MetalChain-compatible client: Blazor WebAssembly, MetalCommand console apps, or plain .NET.
 
-### Libraries
+### MetalGuardian
 
-| Package | NuGet | Description |
-|---|---|---|
-| [`RossWright.MetalCommand`](MetalCommand/README.md) | [NuGet](https://www.nuget.org/packages/RossWright.MetalCommand) | Console host builder, `ICommand` / `CommandDescriptor` model, argument resolution, `IConsole` API with indentation and color, progress indicators (spinner, bar, percentage), and `ICommandExecutor` for inter-command dispatch |
-| [`RossWright.MetalCommand.Data`](MetalCommand/README.md#database-tooling) | [NuGet](https://www.nuget.org/packages/RossWright.MetalCommand.Data) | EF Core integration: named environment `IDatabaseContextFactory`, built-in migrate / load / reload / obliterate / clear commands, `CsvFile<T>` seed-data reader |
-| [`RossWright.MetalCommand.Data.SqlServer`](MetalCommand/README.md#database-tooling) | [NuGet](https://www.nuget.org/packages/RossWright.MetalCommand.Data.SqlServer) | SQL Server provider helpers for MetalCommand data access |
-| [`RossWright.MetalCommand.Data.MySql`](MetalCommand/README.md#database-tooling) | [NuGet](https://www.nuget.org/packages/RossWright.MetalCommand.Data.MySql) | MySQL / MariaDB provider helpers for MetalCommand data access |
-| [`RossWright.MetalCommand.Abstractions`](MetalCommand/README.md) | [NuGet](https://www.nuget.org/packages/RossWright.MetalCommand.Abstractions) | `ICommand`, `CommandDescriptor`, `IConsole`, `ICommandExecutor`, and `IConsoleApplicationBuilder` contracts — for shared projects with no runtime dependency |
+MetalGuardian is a complete authentication and authorization system purpose-built for the Metal stack. It provides ready-made MetalNexus endpoints and MetalChain handlers for login, logout, token refresh, role-based authorization, and multi-factor authentication (TOTP), letting you add a secure auth layer to a Metal application with minimal setup.
 
----
+### MetalShout
+
+MetalShout is the server-to-client push complement to MetalNexus. It uses SignalR under the hood to let server code dispatch MetalChain commands directly to connected clients, which handle them with ordinary `IRequestHandler` implementations. The result is real-time server push — event notifications, live data updates, progress reporting — using the same request/handler model as the rest of the Metal stack.
+
+### MetalInquisitor
+
+MetalInquisitor easily adds database auditing and change tracking to any Entity Framework Core context, tying HTTP context and authentication to each change to your database without the need for manual intervention in your application code.
+
+### MetalGrind
+
+MetalGrind is a background task management framework that integrates with MetalInjection's hosted service registration to let you define recurring or on-demand background jobs as simple classes implementing `IJob`. Jobs can be scheduled with cron-like syntax, triggered by other code, or set to run at startup. The runtime handles execution, error handling, and graceful shutdown. It includes a hosted dashboard for monitoring job status and history that is easy to add to an ASP.NET Core application.
+
+### MetalTimebomb
+
+MetalTimebomb allows you to set an expiration date on any entity saved to your database at write time and automatically deletes expired entities in the background using hard or soft delete as configured. The timebomb on an entity can be reset or removed at any time before detonation, and the cleanup process is designed to be efficient and non-disruptive even with large datasets.
 
 ## License
 

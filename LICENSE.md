@@ -1,6 +1,6 @@
 # Ross Wright Metal Libraries License
 
-This software (including MetalCore, MetalChain, MetalNexus, MetalGuardian, MetalShout, MetalInjection, MetalTimebomb, MetalInquisitor, MetalCommand and all related packages) is licensed under the Apache License, Version 2.0 with the Commons Clause condition below.
+This software (including but limited to MetalCore, MetalChain, MetalInjection, MetalCommand, MetalNexus, MetalGuardian, MetalShout, MetalInquisitor, MetalGrind, MetalTimebomb and all related packages) is licensed under the Apache License, Version 2.0 with the Commons Clause condition below.
 
 Copyright (c) 2023-2026 Pross Co.
 

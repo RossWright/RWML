@@ -54,15 +54,6 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.AddMetalInjection(_ => _.ScanThisAssembly());
 ```
 
-### MetalCommand Client Setup
-To setup MetalInjection and auto-register services and configurations on a MetalCommand Console project
-add the [RossWright.MetalInjection](https://www.nuget.org/packages/RossWright.MetalInjection/) nuget package to your project
-and call `AddMetalInjection` on the `ConsoleApplicationBuilder` in your program.cs file:
-```csharp
-var builder = ConsoleApplication.CreateBuilder(args);
-builder.AddMetalInjection(_ => _.ScanThisAssembly());
-```
-
 ### Other Projects Setup
 To setup MetalInjection and auto-register services and configurations on a console project or any other project type using IServiceProvider, 
 add the [RossWright.MetalInjection](https://www.nuget.org/packages/RossWright.MetalInjection/) nuget package to your project,

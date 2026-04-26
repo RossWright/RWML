@@ -20,7 +20,6 @@
 
   <ItemGroup>
 	  <ProjectReference Include="..\RossWright.MetalInjection.Abstractions\RossWright.MetalInjection.Abstractions.csproj" />
-    <ProjectReference Include="..\..\MetalCommand\RossWright.MetalCommand.Abstractions\RossWright.MetalCommand.Abstractions.csproj" />
     <ProjectReference Include="..\..\MetalCore\RossWright.MetalCore\RossWright.MetalCore.csproj" />
   </ItemGroup>
   

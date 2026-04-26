@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using RossWright.MetalCommand;
 
 namespace RossWright.MetalInjection;
 
@@ -9,25 +8,6 @@ namespace RossWright.MetalInjection;
 /// </summary>
 public static class MetalInjectionExtensions
 {
-    /// <summary>
-    /// Adds MetalInjection to a <see cref="IConsoleApplicationBuilder"/>, performing assembly scanning
-    /// and configuring the service provider factory for property injection.
-    /// </summary>
-    /// <param name="hostBuilder">The console application builder to configure.</param>
-    /// <param name="setOptions">An optional delegate to configure MetalInjection options.</param>
-    /// <returns>The <paramref name="hostBuilder"/> for chaining.</returns>
-    public static IConsoleApplicationBuilder AddMetalInjection(
-        this IConsoleApplicationBuilder hostBuilder,
-        Action<IMetalInjectionOptionsBuilder>? setOptions = null)
-    {
-        var optionsBuilder = MetalInjectionOptionsBuilder.Create(InternalKey.Value);
-        if (setOptions != null) setOptions(optionsBuilder);
-        optionsBuilder.InitializeServices(hostBuilder.Services, hostBuilder.Configuration);
-        LoadOpenGenericFactories(hostBuilder.Services, optionsBuilder);
-        hostBuilder.SetServiceProviderFactory(optionsBuilder.CreateServiceProviderFactory());
-        return hostBuilder;
-    }
-
     /// <summary>
     /// Performs assembly scanning, registers discovered services into <paramref name="serviceCollection"/>,
     /// and builds an <see cref="IServiceProvider"/> that supports MetalInjection property injection.

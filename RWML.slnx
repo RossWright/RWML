@@ -18,15 +18,6 @@
     <Project Path="MetalChain/RossWright.MetalChain.Tests/RossWright.MetalChain.Tests.csproj" />
     <Project Path="MetalChain/RossWright.MetalChain/RossWright.MetalChain.csproj" />
   </Folder>
-  <Folder Name="/MetalCommand/">
-    <File Path="MetalCommand/Readme.md" />
-    <File Path="MetalCommand/RossWright.MetalCommand.targets" />
-    <Project Path="MetalCommand/RossWright.MetalCommand.Abstractions/RossWright.MetalCommand.Abstractions.csproj" />
-    <Project Path="MetalCommand/RossWright.MetalCommand.Data.MySql/RossWright.MetalCommand.Data.MySql.csproj" />
-    <Project Path="MetalCommand/RossWright.MetalCommand.Data.SqlServer/RossWright.MetalCommand.Data.SqlServer.csproj" />
-    <Project Path="MetalCommand/RossWright.MetalCommand.Data/RossWright.MetalCommand.Data.csproj" />
-    <Project Path="MetalCommand/RossWright.MetalCommand/RossWright.MetalCommand.csproj" />
-  </Folder>
   <Folder Name="/MetalCore/">
     <File Path="MetalCore/RossWright.MetalCore.targets" />
     <Project Path="MetalCore/RossWright.MetalCore.Blazor/RossWright.MetalCore.Blazor.csproj" />
@@ -43,16 +34,6 @@
     <Project Path="MetalCore/RossWright.MetalCore.Testing/RossWright.MetalCore.Testing.csproj" />
     <Project Path="MetalCore/RossWright.MetalCore.Tests/RossWright.MetalCore.Tests.csproj" />
   </Folder>
-  <Folder Name="/MetalGuardian/">
-    <File Path="MetalGuardian/Readme.md" />
-    <File Path="MetalGuardian/RossWright.MetalGuardian.targets" />
-    <Project Path="MetalGuardian/RossWright.MetalGuardian.Abstractions/RossWright.MetalGuardian.Abstractions.csproj" />
-    <Project Path="MetalGuardian/RossWright.MetalGuardian.Blazor/RossWright.MetalGuardian.Blazor.csproj" />
-    <Project Path="MetalGuardian/RossWright.MetalGuardian.MFA.TOTP/RossWright.MetalGuardian.MFA.TOTP.csproj" />
-    <Project Path="MetalGuardian/RossWright.MetalGuardian.Server.MFA.TOTP/RossWright.MetalGuardian.Server.MFA.TOTP.csproj" />
-    <Project Path="MetalGuardian/RossWright.MetalGuardian.Server/RossWright.MetalGuardian.Server.csproj" />
-    <Project Path="MetalGuardian/RossWright.MetalGuardian/RossWright.MetalGuardian.csproj" />
-  </Folder>
   <Folder Name="/MetalInjection/">
     <File Path="MetalInjection/Readme.md" />
     <File Path="MetalInjection/RossWright.MetalInjection.targets" />
@@ -61,23 +42,5 @@
     <Project Path="MetalInjection/RossWright.MetalInjection.Server/RossWright.MetalInjection.Server.csproj" />
     <Project Path="MetalInjection/RossWright.MetalInjection.Tests/RossWright.MetalInjection.Tests.csproj" />
     <Project Path="MetalInjection/RossWright.MetalInjection/RossWright.MetalInjection.csproj" />
-  </Folder>
-  <Folder Name="/MetalNexus/">
-    <File Path="MetalNexus/Readme.md" />
-    <File Path="MetalNexus/RossWright.MetalNexus.targets" />
-    <Project Path="MetalNexus/RossWright.MetalNexus.Abstractions/RossWright.MetalNexus.Abstractions.csproj" />
-    <Project Path="MetalNexus/RossWright.MetalNexus.Blazor/RossWright.MetalNexus.Blazor.csproj" />
-    <Project Path="MetalNexus/RossWright.MetalNexus.Server/RossWright.MetalNexus.Server.csproj" />
-    <Project Path="MetalNexus/RossWright.MetalNexus/RossWright.MetalNexus.csproj" />
-  </Folder>
-  <Folder Name="/MetalNexus/Test/">
-    <Project Path="MetalNexus/RossWright.MetalNexus.Server.Tests/RossWright.MetalNexus.Server.Tests.csproj" />
-    <Project Path="MetalNexus/RossWright.MetalNexus.Tests/RossWright.MetalNexus.Tests.csproj" />
-  </Folder>
-  <Folder Name="/MetalShout/">
-    <File Path="MetalShout/Readme.md" />
-    <File Path="MetalShout/RossWright.MetalShout.targets" />
-    <Project Path="MetalShout/RossWright.MetalShout.Server/RossWright.MetalShout.Server.csproj" />
-    <Project Path="MetalShout/RossWright.MetalShout/RossWright.MetalShout.csproj" />
   </Folder>
 </Solution>
