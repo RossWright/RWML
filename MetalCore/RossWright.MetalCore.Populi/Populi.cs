@@ -52,6 +52,8 @@ public static class Populi
     public static T OneOf<T>(params (T, int)[] weightedChoices)
     {
         var sumofWeights = weightedChoices.Sum(_ => Math.Max(0, _.Item2));
+        if (sumofWeights == 0)
+            return weightedChoices[r.Next(weightedChoices.Length)].Item1;
         var pick = r.Next(sumofWeights);
         int i = 0;
         while (pick >= 0) pick -= Math.Max(0, weightedChoices[i++].Item2);

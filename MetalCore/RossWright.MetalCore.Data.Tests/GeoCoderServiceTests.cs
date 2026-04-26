@@ -58,4 +58,17 @@ public class GeoCoderServiceTests
         result.Lat.ShouldNotBe(0.0);
         result.Lng.ShouldNotBe(0.0);
     }
+
+    [Fact]
+    public void Constructor_LoadsEmbeddedResourceSuccessfully()
+    {
+        // Arrange & Act
+        var service = new GeoCoderService();
+
+        // Assert
+        service.ShouldNotBeNull();
+        var coordinates = service.GetCoordinates("60601");
+        coordinates.Lat.ShouldNotBe(0.0);
+        coordinates.Lng.ShouldNotBe(0.0);
+    }
 }

@@ -71,6 +71,92 @@ public class DbContextExtensionTests
         await ctx.SaveChangesAsyncWithFkErrors(_ => { });
     }
 
+    // ParseConstraintName — SQL Server
+
+    [Theory]
+    [InlineData("Microsoft.EntityFrameworkCore.SqlServer",
+        "The INSERT statement conflicted with the FOREIGN KEY constraint \"FK_Order_Customer\". The conflict occurred in database.",
+        "FK_Order_Customer")]
+    [InlineData("Microsoft.EntityFrameworkCore.SqlServer",
+        "FOREIGN KEY constraint \"FK_Another\" failed.",
+        "FK_Another")]
+    [InlineData("Microsoft.EntityFrameworkCore.SqlServer",
+        "foreign key constraint \"fk_lowercase\" issue",
+        "fk_lowercase")]
+    public void ParseConstraintName_SqlServer_ExtractsConstraintName(string provider, string message, string expected) =>
+        DbContextExtensions.ParseConstraintName(provider, message).ShouldBe(expected);
+
+    [Theory]
+    [InlineData("Microsoft.EntityFrameworkCore.SqlServer",
+        "The INSERT statement conflicted with a foreign key.")]        // missing quoted name
+    [InlineData("Microsoft.EntityFrameworkCore.SqlServer",
+        "FOREIGN KEY constraint \"")]                                  // no closing quote
+    [InlineData("Microsoft.EntityFrameworkCore.SqlServer",
+        "Some unrelated database error")]                              // wrong keyword
+    [InlineData("Microsoft.EntityFrameworkCore.SqlServer",
+        "")]                                                           // empty message
+    public void ParseConstraintName_SqlServer_ReturnsNull(string provider, string message) =>
+        DbContextExtensions.ParseConstraintName(provider, message).ShouldBeNull();
+
+    [Fact]
+    public void ParseConstraintName_SqlServer_EmptyConstraintName_ReturnsNull()
+    {
+        // endIndex == startIndex when name is empty, so the (endIndex > startIndex) guard kicks in
+        var result = DbContextExtensions.ParseConstraintName(
+            "Microsoft.EntityFrameworkCore.SqlServer",
+            "FOREIGN KEY constraint \"\" failed");
+        result.ShouldBeNull();
+    }
+
+    // ParseConstraintName — MySQL
+
+    [Theory]
+    [InlineData("pomelo.entityframeworkcore.mysql",
+        "Cannot add or update a child row: a foreign key constraint fails (`db`.`table`, CONSTRAINT `FK_Order_Customer` FOREIGN KEY)",
+        "FK_Order_Customer")]
+    [InlineData("Pomelo.EntityFrameworkCore.MySql",           // mixed-case provider normalised
+        "a foreign key constraint fails, CONSTRAINT `FK_Another`",
+        "FK_Another")]
+    [InlineData("MySql.EntityFrameworkCore",
+        "A FOREIGN KEY CONSTRAINT FAILS, CONSTRAINT `fk_lower`",
+        "fk_lower")]
+    public void ParseConstraintName_MySql_ExtractsConstraintName(string provider, string message, string expected) =>
+        DbContextExtensions.ParseConstraintName(provider, message).ShouldBe(expected);
+
+    [Theory]
+    [InlineData("pomelo.entityframeworkcore.mysql",
+        "a foreign key constraint fails, CONSTRAINT `")]               // no closing backtick
+    [InlineData("pomelo.entityframeworkcore.mysql",
+        "Cannot add or update a child row: some other error")]         // wrong keyword
+    [InlineData("pomelo.entityframeworkcore.mysql",
+        "")]                                                           // empty message
+    public void ParseConstraintName_MySql_ReturnsNull(string provider, string message) =>
+        DbContextExtensions.ParseConstraintName(provider, message).ShouldBeNull();
+
+    [Fact]
+    public void ParseConstraintName_MySql_EmptyConstraintName_ReturnsNull()
+    {
+        var result = DbContextExtensions.ParseConstraintName(
+            "pomelo.entityframeworkcore.mysql",
+            "a foreign key constraint fails, CONSTRAINT `` rest");
+        result.ShouldBeNull();
+    }
+
+    // ParseConstraintName — provider edge cases
+
+    [Theory]
+    [InlineData(null, "FOREIGN KEY constraint \"FK_Test\". detail")]
+    [InlineData("", "FOREIGN KEY constraint \"FK_Test\". detail")]
+    [InlineData("Microsoft.EntityFrameworkCore.Sqlite", "FOREIGN KEY constraint \"FK_Test\". detail")]
+    public void ParseConstraintName_UnknownOrNullProvider_ReturnsNull(string? provider, string message) =>
+        DbContextExtensions.ParseConstraintName(provider, message).ShouldBeNull();
+
+    [Theory]
+    [InlineData("Microsoft.EntityFrameworkCore.SqlServer", null)]
+    [InlineData("pomelo.entityframeworkcore.mysql", null)]
+    public void ParseConstraintName_NullMessage_ReturnsNull(string provider, string? message) =>
+        DbContextExtensions.ParseConstraintName(provider, message).ShouldBeNull();
+
     // T17 — CheckForChangesToAny
 
     [Fact]

@@ -13,10 +13,6 @@
   </ItemGroup>
   
   <ItemGroup>
-    <Compile Include="..\..\InternalKey.cs" Link="InternalKey.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\RossWright.MetalInjection\RossWright.MetalInjection.csproj" />
   </ItemGroup>
 

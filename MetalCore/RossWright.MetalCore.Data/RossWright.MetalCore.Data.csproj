@@ -22,5 +22,9 @@
 	<ItemGroup>
 		<ProjectReference Include="..\RossWright.MetalCore\RossWright.MetalCore.csproj" />
 	</ItemGroup>
+	
+	<ItemGroup>
+	  <InternalsVisibleTo Include="RossWright.MetalCore.Data.Tests" />
+	</ItemGroup>
 
 </Project>

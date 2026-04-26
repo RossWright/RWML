@@ -4,6 +4,7 @@ using Shouldly;
 
 namespace RossWright.MetalChain.Tests;
 
+[Collection(BasicCommandHandlerCollection.Name)]
 public class MetalChainSendTests
 {
     public MetalChainSendTests()

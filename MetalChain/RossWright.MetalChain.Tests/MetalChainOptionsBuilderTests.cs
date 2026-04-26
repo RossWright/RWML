@@ -3,6 +3,7 @@ using Shouldly;
 
 namespace RossWright.MetalChain.Tests;
 
+[Collection(BasicCommandHandlerCollection.Name)]
 public class MetalChainOptionsBuilderTests
 {
     [Fact] public void HappyPath()
@@ -124,5 +125,99 @@ public class MetalChainOptionsBuilderTests
 
         await mediator.Send(new BasicCommand.Request(999));
         BasicCommand.Handler.LastValue.ShouldBe(999);
+    }
+
+    [Fact]
+    public void IgnoreHandlerGeneric_ValidHandlerType_ReturnsBuilder()
+    {
+        var builder = new MetalChainOptionsBuilder();
+
+        var result = builder.IgnoreHandler<BasicCommand.Handler>();
+
+        result.ShouldBeSameAs(builder);
+    }
+
+    [Fact]
+    public void IgnoreHandlerGeneric_SingleHandler_HandlerNotRegistered()
+    {
+        var builder = new MetalChainOptionsBuilder();
+        builder.IgnoreHandler<BasicCommand.Handler>();
+        builder.SetDiscoveredConcreteTypesForTesting([
+            typeof(BasicCommand.Handler),
+            typeof(BasicQuery.Handler)
+        ]);
+
+        var services = new ServiceCollection();
+        builder.Initialize(services);
+
+        var registryDescriptor = services.First(_ => _.ServiceType == typeof(IMetalChainRegistry));
+        var registry = (MetalChainRegistry)registryDescriptor.ImplementationInstance!;
+
+        registry._commandHandlers.Keys.ShouldNotContain(typeof(BasicCommand.Request));
+        registry._queryHandlers.Keys.ShouldContain(typeof(BasicQuery.Request));
+    }
+
+    [Fact]
+    public void IgnoreHandlerGeneric_MultipleHandlers_AllHandlersIgnored()
+    {
+        var builder = new MetalChainOptionsBuilder();
+        builder.IgnoreHandler<BasicCommand.Handler>()
+               .IgnoreHandler<BasicQuery.Handler>();
+        builder.SetDiscoveredConcreteTypesForTesting([
+            typeof(BasicCommand.Handler),
+            typeof(BasicQuery.Handler),
+            typeof(InterceptingCommand.Handler)
+        ]);
+
+        var services = new ServiceCollection();
+        builder.Initialize(services);
+
+        var registryDescriptor = services.First(_ => _.ServiceType == typeof(IMetalChainRegistry));
+        var registry = (MetalChainRegistry)registryDescriptor.ImplementationInstance!;
+
+        registry._commandHandlers.Keys.ShouldNotContain(typeof(BasicCommand.Request));
+        registry._queryHandlers.Keys.ShouldNotContain(typeof(BasicQuery.Request));
+        registry._commandHandlers.Keys.ShouldContain(typeof(InterceptingCommand.Request));
+    }
+
+    [Fact]
+    public void IgnoreHandlerGeneric_ChainedWithOtherOptions_AllOptionsApplied()
+    {
+        var builder = new MetalChainOptionsBuilder();
+        builder.AllowUnhandledQueries()
+               .IgnoreHandler<BasicCommand.Handler>()
+               .AllowUnhandledCommands();
+        builder.SetDiscoveredConcreteTypesForTesting([
+            typeof(BasicCommand.Handler),
+            typeof(BasicQuery.Handler)
+        ]);
+
+        var services = new ServiceCollection();
+        builder.Initialize(services);
+
+        var registryDescriptor = services.First(_ => _.ServiceType == typeof(IMetalChainRegistry));
+        var registry = (MetalChainRegistry)registryDescriptor.ImplementationInstance!;
+
+        registry.AllowUnhandledQueries.ShouldBeTrue();
+        registry.AllowUnhandledCommands.ShouldBeTrue();
+        registry._commandHandlers.Keys.ShouldNotContain(typeof(BasicCommand.Request));
+        registry._queryHandlers.Keys.ShouldContain(typeof(BasicQuery.Request));
+    }
+
+    [Fact]
+    public void IgnoreHandlerGeneric_SameHandlerIgnoredTwice_NoError()
+    {
+        var builder = new MetalChainOptionsBuilder();
+        builder.IgnoreHandler<BasicCommand.Handler>()
+               .IgnoreHandler<BasicCommand.Handler>();
+        builder.SetDiscoveredConcreteTypesForTesting([typeof(BasicCommand.Handler)]);
+
+        var services = new ServiceCollection();
+        builder.Initialize(services);
+
+        var registryDescriptor = services.First(_ => _.ServiceType == typeof(IMetalChainRegistry));
+        var registry = (MetalChainRegistry)registryDescriptor.ImplementationInstance!;
+
+        registry._commandHandlers.Keys.ShouldNotContain(typeof(BasicCommand.Request));
     }
 }

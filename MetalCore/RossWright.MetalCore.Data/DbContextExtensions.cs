@@ -26,71 +26,80 @@ public static class DbContextExtensions
         }
         catch (DbUpdateException ex)
         {
-            var innerEx = ex.InnerException;
-            if (innerEx != null)
+            var constraintName = ParseConstraintName(
+                dbContext.Database.ProviderName,
+                ex.InnerException?.Message);
+
+            if (constraintName != null)
             {
-                string msg = innerEx.Message;
-                string provider = dbContext.Database.ProviderName?.ToLowerInvariant() ?? string.Empty;
-                string? constraintName = null;
-
-                if (provider.Contains("sqlserver"))
+                foreach (var entry in ex.Entries)
                 {
-                    if (msg.Contains("FOREIGN KEY constraint", StringComparison.OrdinalIgnoreCase))
+                    foreach (var fk in entry.Metadata.GetForeignKeys())
                     {
-                        const string fkPrefix = "FOREIGN KEY constraint \"";
-                        int startIndex = msg.IndexOf(fkPrefix, StringComparison.OrdinalIgnoreCase);
-                        if (startIndex >= 0)
+                        string fkConstraintName = fk.GetConstraintName()!;
+                        if (string.Equals(fkConstraintName, constraintName, StringComparison.OrdinalIgnoreCase))
                         {
-                            startIndex += fkPrefix.Length;
-                            int endIndex = msg.IndexOf("\"", startIndex);
-                            if (endIndex > startIndex)
+                            onError(new ForeignKeyErrorReport
                             {
-                                constraintName = msg.Substring(startIndex, endIndex - startIndex);
-                            }
-                        }
-                    }
-                }
-                else if (provider.Contains("mysql"))
-                {
-                    if (msg.Contains("a foreign key constraint fails", StringComparison.OrdinalIgnoreCase))
-                    {
-                        const string fkPrefix = "CONSTRAINT `";
-                        int startIndex = msg.IndexOf(fkPrefix, StringComparison.OrdinalIgnoreCase);
-                        if (startIndex >= 0)
-                        {
-                            startIndex += fkPrefix.Length;
-                            int endIndex = msg.IndexOf("`", startIndex);
-                            if (endIndex > startIndex)
-                            {
-                                constraintName = msg.Substring(startIndex, endIndex - startIndex);
-                            }
-                        }
-                    }
-                }
-
-                if (constraintName != null)
-                {
-                    foreach (var entry in ex.Entries)
-                    {
-                        foreach (var fk in entry.Metadata.GetForeignKeys())
-                        {
-                            string fkConstraintName = fk.GetConstraintName()!;
-                            if (string.Equals(fkConstraintName, constraintName, StringComparison.OrdinalIgnoreCase))
-                            {
-                                onError(new ForeignKeyErrorReport
-                                {
-                                    EntityName = entry.Metadata.Name,
-                                    ConstraintName = constraintName,
-                                    Values = fk.Properties
-                                        .ToDictionary(p => p.Name, p => entry.CurrentValues[p])
-                                });
-                            }
+                                EntityName = entry.Metadata.Name,
+                                ConstraintName = constraintName,
+                                Values = fk.Properties
+                                    .ToDictionary(p => p.Name, p => entry.CurrentValues[p])
+                            });
                         }
                     }
                 }
             }
             throw;
         }
+    }
+
+    /// <summary>
+    /// Parses a foreign key constraint name from a database exception message.
+    /// Supports SQL Server and MySQL provider name strings.
+    /// </summary>
+    /// <param name="providerName">The EF Core provider name (e.g. <c>Microsoft.EntityFrameworkCore.SqlServer</c>).</param>
+    /// <param name="message">The inner exception message to parse.</param>
+    /// <returns>The constraint name if one could be parsed; otherwise <see langword="null"/>.</returns>
+    internal static string? ParseConstraintName(string? providerName, string? message)
+    {
+        if (string.IsNullOrEmpty(message))
+            return null;
+
+        string provider = providerName?.ToLowerInvariant() ?? string.Empty;
+
+        if (provider.Contains("sqlserver"))
+        {
+            if (message.Contains("FOREIGN KEY constraint", StringComparison.OrdinalIgnoreCase))
+            {
+                const string fkPrefix = "FOREIGN KEY constraint \"";
+                int startIndex = message.IndexOf(fkPrefix, StringComparison.OrdinalIgnoreCase);
+                if (startIndex >= 0)
+                {
+                    startIndex += fkPrefix.Length;
+                    int endIndex = message.IndexOf("\"", startIndex);
+                    if (endIndex > startIndex)
+                        return message.Substring(startIndex, endIndex - startIndex);
+                }
+            }
+        }
+        else if (provider.Contains("mysql"))
+        {
+            if (message.Contains("a foreign key constraint fails", StringComparison.OrdinalIgnoreCase))
+            {
+                const string fkPrefix = "CONSTRAINT `";
+                int startIndex = message.IndexOf(fkPrefix, StringComparison.OrdinalIgnoreCase);
+                if (startIndex >= 0)
+                {
+                    startIndex += fkPrefix.Length;
+                    int endIndex = message.IndexOf("`", startIndex);
+                    if (endIndex > startIndex)
+                        return message.Substring(startIndex, endIndex - startIndex);
+                }
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

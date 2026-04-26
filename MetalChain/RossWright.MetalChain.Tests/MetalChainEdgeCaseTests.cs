@@ -161,6 +161,7 @@ public class MetalChainCancellationTokenTests
     }
 }
 
+[Collection(BasicCommandHandlerCollection.Name)]
 public class MetalChainListenerTests
 {
     private readonly IServiceProvider _serviceProvider;
@@ -360,6 +361,7 @@ public class MetalChainDisposableTests
     }
 }
 
+[Collection(BasicCommandHandlerCollection.Name)]
 public class MetalChainSendOrIgnoreTests
 {
     private readonly IServiceProvider _serviceProvider;

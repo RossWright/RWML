@@ -24,7 +24,7 @@ public static class MetalInjectionServerExtensions
     public static WebApplicationBuilder AddMetalInjection(this WebApplicationBuilder appBuilder,
         Action<IMetalInjectionOptionsBuilder>? setOptions = null)
     {
-        var optionsBuilder = MetalInjectionOptionsBuilder.Create(InternalKey.Value);
+        var optionsBuilder = new MetalInjectionOptionsBuilder();
         optionsBuilder.SetAlternateInjectAttribute<Microsoft.AspNetCore.Components.InjectAttribute>(_ => _.Key);
         if (setOptions != null) setOptions(optionsBuilder);
         optionsBuilder.InitializeServices(appBuilder.Services, appBuilder.Configuration);

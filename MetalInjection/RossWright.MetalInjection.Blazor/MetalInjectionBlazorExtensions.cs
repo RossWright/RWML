@@ -21,7 +21,7 @@ public static class MetalInjectionBlazorExtensions
         this WebAssemblyHostBuilder hostBuilder,
         Action<IMetalInjectionOptionsBuilder>? setOptions = null)
     {
-        var optionsBuilder = MetalInjectionOptionsBuilder.Create(InternalKey.Value);
+        var optionsBuilder = new MetalInjectionOptionsBuilder();
         optionsBuilder.SetAlternateInjectAttribute<Microsoft.AspNetCore.Components.InjectAttribute>(_ => _.Key);
         if (setOptions != null) setOptions(optionsBuilder);
         optionsBuilder.InitializeServices(hostBuilder.Services, hostBuilder.Configuration);

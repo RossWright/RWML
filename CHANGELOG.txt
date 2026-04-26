@@ -1,0 +1,12 @@
+﻿[2026.1.0] - 5/13/2026
+- MetalCommand - Initial public release.
+- MetalCore - Minor Fixes, additional Unit Tests and documentation.
+- MetalChain - Additional Unit Tests and documentation.
+- MetalInjection - Minor Fixes, additional Unit Tests and documentation.
+
+[2026.0.0] - 4/26/2026
+- MetalCore - Initial public release 
+- MetalChain - Initial public release 
+- MetalInjection - Initial public release 
+
+** Prior versions released of this library were private and not intended for public use. Use version 2026.0.0 or later.**

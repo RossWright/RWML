@@ -15,11 +15,8 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.3" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\InternalKey.cs" Link="Internal\InternalKey.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
 	  <ProjectReference Include="..\RossWright.MetalInjection.Abstractions\RossWright.MetalInjection.Abstractions.csproj" />
+    <ProjectReference Include="..\..\MetalCommand\RossWright.MetalCommand.Abstractions\RossWright.MetalCommand.Abstractions.csproj" />
     <ProjectReference Include="..\..\MetalCore\RossWright.MetalCore\RossWright.MetalCore.csproj" />
   </ItemGroup>
   

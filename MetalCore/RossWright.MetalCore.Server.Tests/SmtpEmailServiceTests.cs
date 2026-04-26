@@ -87,4 +87,50 @@ public class SmtpEmailServiceTests
 
         service.ShouldNotBeNull();
     }
+
+    [Fact]
+    public async Task Send_WithCcRecipients_ThrowsMetalCoreExceptionOnConnectionFailure()
+    {
+        var service = CreateService();
+        var email = new AddressedEmail(
+            [new EmailRecipient("Recipient", "to@example.com")],
+            "Test Subject", "Hello", "<b>Hello</b>")
+        {
+            CcRecipients = [new EmailRecipient("CC Recipient", "cc@example.com")]
+        };
+
+        await Should.ThrowAsync<MetalCoreException>(
+            () => service.Send(email));
+    }
+
+    [Fact]
+    public async Task Send_WithBccRecipients_ThrowsMetalCoreExceptionOnConnectionFailure()
+    {
+        var service = CreateService();
+        var email = new AddressedEmail(
+            [new EmailRecipient("Recipient", "to@example.com")],
+            "Test Subject", "Hello", "<b>Hello</b>")
+        {
+            BccRecipients = [new EmailRecipient("BCC Recipient", "bcc@example.com")]
+        };
+
+        await Should.ThrowAsync<MetalCoreException>(
+            () => service.Send(email));
+    }
+
+    [Fact]
+    public async Task Send_WithCcAndBccRecipients_ThrowsMetalCoreExceptionOnConnectionFailure()
+    {
+        var service = CreateService();
+        var email = new AddressedEmail(
+            [new EmailRecipient("Recipient", "to@example.com")],
+            "Test Subject", "Hello", "<b>Hello</b>")
+        {
+            CcRecipients = [new EmailRecipient("CC Recipient", "cc@example.com")],
+            BccRecipients = [new EmailRecipient("BCC Recipient", "bcc@example.com")]
+        };
+
+        await Should.ThrowAsync<MetalCoreException>(
+            () => service.Send(email));
+    }
 }

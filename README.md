@@ -7,6 +7,7 @@ Copyright (c) 2023-2026 Pross Co.
 - [MetalCore](#metalcore)
 - [MetalChain](#metalchain)
 - [MetalInjection](#metalinjection)
+- [MetalCommand](#metalcommand)
 - [Future Libraries](#future-libraries)
 - [License](#license)
 
@@ -17,6 +18,25 @@ Copyright (c) 2023-2026 Pross Co.
 The **Ross Wright Metal Libraries** are a suite of foundational .NET packages for building modern, production-ready applications. They cover dependency injection, mediator-pattern request dispatching, utilities, test-data generation, and more — designed to work independently or together across server, Blazor WebAssembly, and console project types.
 
 All packages target **.NET 8, .NET 9, and .NET 10**. All extension methods live in the `RossWright` namespace (global-usings friendly).
+
+---
+
+## New in 2026.1.0
+
+**MetalCommand** — a full console-application framework — joins the suite in this release.
+
+MetalCommand provides a host-builder pattern (`ConsoleApplication.CreateBuilder`) that wires configuration, dependency injection, and a command-dispatch loop into a ready-to-run interactive console application. It is independent of MetalChain and MetalInjection but integrates seamlessly with both. The release includes six packages:
+
+| Package | Description |
+|---|---|
+| `RossWright.MetalCommand` | Core host, `ICommand` dispatch, `IConsole` API, progress indicators |
+| `RossWright.MetalCommand.Abstractions` | Contracts only — for shared projects with no runtime dependency |
+| `RossWright.MetalCommand.Data` | EF Core integration: environment-aware `IDatabaseContextFactory` and built-in database management commands |
+| `RossWright.MetalCommand.Data.SqlServer` | SQL Server provider helpers |
+| `RossWright.MetalCommand.Data.MySql` | MySQL / MariaDB provider helpers |
+| `RossWright.MetalCommand.Http` | Environment-aware HTTP connection management and `ping` command |
+
+MetalCore, MetalInjection, and MetalChain also ship updated packages in this release with documentation and minor improvements.
 
 ---
 
@@ -104,16 +124,31 @@ A ground-up dependency inversion container for .NET. MetalInjection is a complet
 
 ---
 
-## Future Libraries
-The following Metal libraries are in active development and will be released in the coming months. All are designed to integrate seamlessly with the core MetalChain and MetalInjection libraries, but are decoupled so you can pick and choose which ones to use.
-
-### MetalCommand
+## MetalCommand
 
 MetalCommand is a framework for building interactive .NET console applications. It provides a `ConsoleApplication` host builder that sets up configuration, DI, and a read-execute loop — independently of MetalChain and MetalInjection, though compatible with both. Commands are plain classes implementing `ICommand` that declare their own name, invocation aliases, argument schema, and help text. The runtime handles argument validation, default values, context-key substitution, Ctrl-C cancellation, and error reporting automatically.
 
 The companion data package adds EF Core integration with named, environment-aware database contexts (dev/staging/prod) and a suite of ready-made database management commands — migrate, load from CSV, obliterate, clear — that can be wired up in a single builder call.
 
+### Libraries
+
+| Package | NuGet | Description |
+|---|---|---|
+| [`RossWright.MetalCommand`](MetalCommand/README.md) | [NuGet](https://www.nuget.org/packages/RossWright.MetalCommand) | Console host builder, `ICommand` / `CommandDescriptor` model, argument resolution, `IConsole` API with indentation and color, progress indicators (spinner, bar, percentage), and `ICommandExecutor` for inter-command dispatch |
+| [`RossWright.MetalCommand.Data`](MetalCommand/README.md#database-tooling) | [NuGet](https://www.nuget.org/packages/RossWright.MetalCommand.Data) | EF Core integration: named environment `IDatabaseContextFactory`, built-in migrate / load / reload / obliterate / clear commands, `CsvFile<T>` seed-data reader |
+| [`RossWright.MetalCommand.Data.SqlServer`](MetalCommand/README.md#database-tooling) | [NuGet](https://www.nuget.org/packages/RossWright.MetalCommand.Data.SqlServer) | SQL Server provider helpers for MetalCommand data access |
+| [`RossWright.MetalCommand.Data.MySql`](MetalCommand/README.md#database-tooling) | [NuGet](https://www.nuget.org/packages/RossWright.MetalCommand.Data.MySql) | MySQL / MariaDB provider helpers for MetalCommand data access |
+| [`RossWright.MetalCommand.Http`](MetalCommand/README.md#http-connections) | [NuGet](https://www.nuget.org/packages/RossWright.MetalCommand.Http) | Environment-aware HTTP connection management: named environments, `IHttpConnectionResolver`, and a built-in `ping` command |
+| [`RossWright.MetalCommand.Abstractions`](MetalCommand/README.md) | [NuGet](https://www.nuget.org/packages/RossWright.MetalCommand.Abstractions) | `ICommand`, `CommandDescriptor`, `IConsole`, `ICommandExecutor`, and `IConsoleApplicationBuilder` contracts — for shared projects with no runtime dependency |
+
+---
+
+## Future Libraries
+
+The following Metal libraries are in active development and will be released in the coming months. All are designed to integrate seamlessly with the core MetalChain and MetalInjection libraries, but are decoupled so you can pick and choose which ones to use.
+
 ### MetalNexus
+
 MetalNexus bridges MetalChain across the network, transparently routing `IMediator.Send` calls from a client to server-side handlers over a RESTful API — with no separate HTTP client code to write. Decorate a request with `[ApiRequest]` and MetalNexus auto-generates the endpoint, handles serialization, and marshals exceptions back to the caller. It works with any MetalChain-compatible client: Blazor WebAssembly, MetalCommand console apps, or plain .NET.
 
 ### MetalGuardian
@@ -135,6 +170,8 @@ MetalGrind is a background task management framework that integrates with MetalI
 ### MetalTimebomb
 
 MetalTimebomb allows you to set an expiration date on any entity saved to your database at write time and automatically deletes expired entities in the background using hard or soft delete as configured. The timebomb on an entity can be reset or removed at any time before detonation, and the cleanup process is designed to be efficient and non-disruptive even with large datasets.
+
+---
 
 ## License
 

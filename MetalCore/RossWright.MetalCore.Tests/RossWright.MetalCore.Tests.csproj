@@ -3,6 +3,7 @@
 	<Import Project="..\..\RossWright.Metal.Tests.targets" />
 
 	<ItemGroup>
+		<ProjectReference Include="..\RossWright.MetalCore.Populi\RossWright.MetalCore.Populi.csproj" />
 		<ProjectReference Include="..\RossWright.MetalCore\RossWright.MetalCore.csproj" />
 	</ItemGroup>
 

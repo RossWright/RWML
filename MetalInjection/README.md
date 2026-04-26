@@ -31,12 +31,25 @@ MetalInjection is a dependency inversion library for building and using a servic
 * deterministic disposal of `IDisposable` and `IAsyncDisposable` services across all lifetimes and scope boundaries.
 
 ## Installation
-Metal Injection can be used on server and client projects of any kind: anywhere you want to use a service provider. 
+Metal Injection can be used on server and client projects of any kind: anywhere you want to use a service provider.
 Note that configuration binding only works for projects where configuration binding normally works, so it does not work for Blazor projects.
 
+Choose the package that matches your project type:
+
+```powershell
+# ASP.NET Core
+dotnet add package RossWright.MetalInjection.Server
+
+# Blazor WebAssembly
+dotnet add package RossWright.MetalInjection.Blazor
+
+# MetalCommand console / other .NET projects
+dotnet add package RossWright.MetalInjection
+```
+
 ### Server Setup
-To setup MetalInjection and auto-register services and configurations on an ASP.NET Core project, 
-add the [RossWright.MetalInjection.Server](https://www.nuget.org/packages/RossWright.MetalInjection.Server/) nuget package to your project 
+To setup MetalInjection and auto-register services and configurations on an ASP.NET Core project,
+add the [RossWright.MetalInjection.Server](https://www.nuget.org/packages/RossWright.MetalInjection.Server/) nuget package to your project
 and call `AddMetalInjection` on the `WebApplicationBuilder` in your program.cs file:
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
@@ -51,6 +64,15 @@ add the [RossWright.MetalInjection.Blazor](https://www.nuget.org/packages/RossWr
 and call `AddMetalInjection` on the `WebAssemblyHostBuilder` in your program.cs file:
 ```csharp
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
+builder.AddMetalInjection(_ => _.ScanThisAssembly());
+```
+
+### MetalCommand Client Setup
+To setup MetalInjection and auto-register services and configurations on a MetalCommand Console project
+add the [RossWright.MetalInjection](https://www.nuget.org/packages/RossWright.MetalInjection/) nuget package to your project
+and call `AddMetalInjection` on the `ConsoleApplicationBuilder` in your program.cs file:
+```csharp
+var builder = ConsoleApplication.CreateBuilder(args);
 builder.AddMetalInjection(_ => _.ScanThisAssembly());
 ```
 

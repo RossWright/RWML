@@ -8,18 +8,16 @@ namespace RossWright.MetalInjection;
 
 /// <summary>
 /// Internal implementation of <see cref="IMetalInjectionOptionsBuilder"/>.
-/// Create instances via <see cref="Create(Guid)"/>; not intended for direct public use.
 /// </summary>
 [EditorBrowsable(EditorBrowsableState.Never)]
 public class MetalInjectionOptionsBuilder
     : AssemblyScanningOptionsBuilder,
     IMetalInjectionOptionsBuilder
 {
-    /// <summary>Creates a new builder instance, guarded by an internal key to prevent accidental public construction.</summary>
-    /// <param name="internalKey">Must equal the internal guard key; returns <see langword="null"/> (non-null enforced by caller) otherwise.</param>
-    public static MetalInjectionOptionsBuilder Create(Guid internalKey) => 
-        internalKey == InternalKey.Value ? new MetalInjectionOptionsBuilder() : null!;
-    internal MetalInjectionOptionsBuilder() : base("MetalInjection") { }
+    /// <summary>
+    /// This constructor is for internal MetalInjection library use only.
+    /// </summary>
+    public MetalInjectionOptionsBuilder() : base("MetalInjection") { }
 
     /// <summary>Returns an <see cref="IServiceProviderFactory{TContainerBuilder}"/> that uses this builder's configuration.</summary>
     public IServiceProviderFactory<IServiceCollection> CreateServiceProviderFactory() 
@@ -225,7 +223,7 @@ public class MetalInjectionOptionsBuilder
             {
                 if (bonusInterface.Key != null)
                     services.AddKeyedSingleton(bonusInterface.ServiceInterfaceType, primary.Key,
-                        (svcs, key) => svcs.GetRequiredService(primary.ServiceInterfaceType));
+                        (svcs, key) => svcs.GetRequiredKeyedService(primary.ServiceInterfaceType, primary.Key));
                 else
                     services.AddSingleton(bonusInterface.ServiceInterfaceType,
                         svcs => svcs.GetRequiredService(primary.ServiceInterfaceType));
@@ -247,7 +245,7 @@ public class MetalInjectionOptionsBuilder
             {
                 if (bonusInterface.Key != null)
                     services.AddKeyedScoped(bonusInterface.ServiceInterfaceType, primary.Key,
-                        (svcs, key) => svcs.GetRequiredService(primary.ServiceInterfaceType));
+                        (svcs, key) => svcs.GetRequiredKeyedService(primary.ServiceInterfaceType, primary.Key));
                 else
                     services.AddScoped(bonusInterface.ServiceInterfaceType,
                         svcs => svcs.GetRequiredService(primary.ServiceInterfaceType));

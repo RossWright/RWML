@@ -4,6 +4,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\RossWright.MetalInjection\RossWright.MetalInjection.csproj" />
+		<ProjectReference Include="..\..\MetalCommand\RossWright.MetalCommand\RossWright.MetalCommand.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -1,0 +1,4 @@
+[2026.1.0] - 5/13/2026 
+- Initial public release.
+
+** Prior versions released of this library were private and not intended for public use. Use version 2026.1.0 or later.**

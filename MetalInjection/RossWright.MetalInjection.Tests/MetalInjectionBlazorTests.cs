@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using System.Reflection;
@@ -82,8 +81,8 @@ public class MetalInjectionBlazorExtensionsTests
         using var scope = provider.CreateScope();
         var result = scope.ServiceProvider.GetService<IBlazorT14Svc>();
 
-        result.ShouldNotBeNull();
-        result.ShouldBeOfType<BlazorT14SvcImpl>();
+        Assert.NotNull(result);
+        Assert.IsType<BlazorT14SvcImpl>(result);
     }
 
     // T14b — Blazor's [Inject] attribute is registered as the alternate inject attribute.
@@ -101,8 +100,8 @@ public class MetalInjectionBlazorExtensionsTests
         var component = new BlazorT15Component();
         scope.ServiceProvider.InjectProperties(component);
 
-        component.Service.ShouldNotBeNull();
-        component.Service.ShouldBeOfType<BlazorT14SvcImpl>();
+        Assert.NotNull(component.Service);
+        Assert.IsType<BlazorT14SvcImpl>(component.Service);
     }
 
     // T14c — No exception is thrown during provider build with a scanned assembly.
@@ -114,7 +113,7 @@ public class MetalInjectionBlazorExtensionsTests
 
         var ex = Record.Exception(() => BlazorTestProviderFactory.BuildBlazorProvider(mockAssembly));
 
-        ex.ShouldBeNull();
+        Assert.Null(ex);
     }
 }
 
@@ -135,8 +134,8 @@ public class MetalInjectionBlazorPropertyInjectionTests
         var component = new BlazorT15Component();
         scope.ServiceProvider.InjectProperties(component);
 
-        component.Service.ShouldNotBeNull();
-        component.Service.ShouldBeOfType<BlazorT14SvcImpl>();
+        Assert.NotNull(component.Service);
+        Assert.IsType<BlazorT14SvcImpl>(component.Service);
     }
 
     // T15b — Both Blazor's [Inject] and MetalInjection's own [Inject] are honoured simultaneously.
@@ -152,12 +151,12 @@ public class MetalInjectionBlazorPropertyInjectionTests
         var component = new BlazorT15DualInjectComponent();
         scope.ServiceProvider.InjectProperties(component);
 
-        component.BlazorInjectedService.ShouldNotBeNull();
-        component.MetalInjectedService.ShouldNotBeNull();
-        component.BlazorInjectedService.ShouldBeOfType<BlazorT14SvcImpl>();
-        component.MetalInjectedService.ShouldBeOfType<BlazorT14SvcImpl>();
+        Assert.NotNull(component.BlazorInjectedService);
+        Assert.NotNull(component.MetalInjectedService);
+        Assert.IsType<BlazorT14SvcImpl>(component.BlazorInjectedService);
+        Assert.IsType<BlazorT14SvcImpl>(component.MetalInjectedService);
         // Both properties resolve to the same scoped instance
-        component.MetalInjectedService.ShouldBeSameAs(component.BlazorInjectedService);
+        Assert.Same(component.BlazorInjectedService, component.MetalInjectedService);
     }
 
     // T15c — A property decorated with Blazor's [Inject] on a type resolved from the container
@@ -187,7 +186,7 @@ public class MetalInjectionBlazorPropertyInjectionTests
         using var scope = fullProvider.CreateScope();
         var component = scope.ServiceProvider.GetRequiredService<BlazorT15Component>();
 
-        component.Service.ShouldNotBeNull();
-        component.Service.ShouldBeOfType<BlazorT14SvcImpl>();
+        Assert.NotNull(component.Service);
+        Assert.IsType<BlazorT14SvcImpl>(component.Service);
     }
 }

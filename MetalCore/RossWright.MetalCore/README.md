@@ -505,7 +505,9 @@ Static class. All methods accept `string?` and return `null` on parse failure.
 | `CombineUrl(params string[])` | Joins URL path segments, trimming slashes and skipping null/empty parts |
 | `BuildQuery(url, params (name, value)[])` | Appends non-null query-string parameters to a URL |
 | `GetLighterColor(hex, percent)` | Returns an `#RRGGBB` color lightened by a percentage via HSL conversion |
-| `GetDesaturatedColor(hex)` | Returns an `#RRGGBB` color with reduced saturation via HSL conversion |
+| `GetDarkerColor(hex, percent)` | Returns an `#RRGGBB` color darkened by a percentage via HSL conversion |
+| `GetDesaturatedColor(hex, percent)` | Returns an `#RRGGBB` color with HSL saturation reduced by a percentage |
+| `GetSaturatedColor(hex, percent)` | Returns an `#RRGGBB` color with HSL saturation increased by a percentage |
 
 ### Service Provider & Activation
 

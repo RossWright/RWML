@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
@@ -195,5 +196,42 @@ public class DatabaseTimingInterceptorExtensionTests
         var result = services.AddDatabaseTimingInterceptor();
 
         result.ShouldBeSameAs(services);
+    }
+
+    [Fact]
+    public void UseDatabaseTimingInterceptor_AddsInterceptorFromServiceProvider()
+    {
+        var services = new ServiceCollection();
+        services.AddDatabaseTimingInterceptor();
+        var provider = services.BuildServiceProvider();
+        var builder = new DbContextOptionsBuilder();
+
+        var result = builder.UseDatabaseTimingInterceptor(provider);
+
+        result.ShouldBeSameAs(builder);
+    }
+
+    [Fact]
+    public void UseDatabaseTimingInterceptor_ThrowsWhenInterceptorNotRegistered()
+    {
+        var services = new ServiceCollection();
+        var provider = services.BuildServiceProvider();
+        var builder = new DbContextOptionsBuilder();
+
+        Should.Throw<InvalidOperationException>(() => builder.UseDatabaseTimingInterceptor(provider));
+    }
+
+    [Fact]
+    public void UseDatabaseTimingInterceptor_RetrievesInterceptorFromServiceProvider()
+    {
+        var interceptor = new DatabaseTimingInterceptor();
+        var serviceProvider = Substitute.For<IServiceProvider>();
+        serviceProvider.GetService(typeof(IDatabaseTimingInterceptor)).Returns(interceptor);
+        var builder = new DbContextOptionsBuilder();
+
+        var result = builder.UseDatabaseTimingInterceptor(serviceProvider);
+
+        serviceProvider.Received(1).GetService(typeof(IDatabaseTimingInterceptor));
+        result.ShouldBeSameAs(builder);
     }
 }
