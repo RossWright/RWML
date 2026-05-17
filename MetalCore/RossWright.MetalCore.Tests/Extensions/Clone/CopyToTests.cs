@@ -321,4 +321,43 @@ public class CopyToTests
         source.CopyTo(target);
         target.DayOfWeek.ShouldBe(DayOfWeek.Wednesday);
     }
+
+    // init-only properties have a public SetMethod in reflection, so CopyTo can and does write them.
+    [Fact] public void DestInitOnlyProp_IsCopied()
+    {
+        var source = new BasicTypeOneProp { Value = 42 };
+        var target = new BasicTypeOneInitProp();
+        source.CopyTo(target);
+        target.Value.ShouldBe(42);
+    }
+
+    // RunThroughDataMembers matches member names case-sensitively:
+    // "value" (lowercase) on the source does not match "Value" on the dest.
+    [Fact] public void CaseMismatch_DoesNotCopy()
+    {
+        var source = new BasicTypeCasedProp { value = 99 };
+        var target = new BasicTypeOneProp { Value = 7 };
+        source.CopyTo(target);
+        target.Value.ShouldBe(7);
+    }
+
+    // Copying a type onto itself produces identical values (smoke test for same-type)
+    [Fact] public void SameType_RoundTrip_AllPropsMatch()
+    {
+        var source = new BasicTypeTwoProp { Value = 5, OtherValue = 10 };
+        var target = new BasicTypeTwoProp();
+        source.CopyTo(target);
+        target.Value.ShouldBe(5);
+        target.OtherValue.ShouldBe(10);
+    }
+
+    // Source properties decorated with [Ignore] are not read
+    [Fact] public void SourceIgnoreProp_ValueNotTransferred()
+    {
+        var source = new BasicTypeTwoPropOneIgnore { Value = 1, OtherValue = 99 };
+        var target = new BasicTypeTwoProp { Value = 0, OtherValue = 0 };
+        source.CopyTo(target);
+        target.Value.ShouldBe(1);
+        target.OtherValue.ShouldBe(0);   // OtherValue was ignored on source
+    }
 }

@@ -78,6 +78,33 @@ class BasicTypeOneReadOnlyProp
     public int Value { get; }
 }
 
+// Positional records for CloneAs primary-constructor tests
+record PositionalSingleProp(int Value);
+record PositionalTwoProps(int Value, string Name);
+record PositionalWithNullable(int Id, string? Description);
+record PositionalWithDateOnly(int Id, DateOnly BirthDate);
+
+// Hybrid: positional ctor params + extra init-only property
+record HybridRecord(int Id, string Name)
+{
+    public string? Extra { get; init; }
+}
+
+// Source type whose property name doesn't match the ctor parameter
+record MismatchedCtorRecord(int UnknownParam);
+
+// Source type with an incompatible type for a ctor parameter (DateOnly vs int — no TypeConverter)
+record TypeMismatchRecord(DateOnly Value);
+
+// Two constructors: prefer the one with more satisfiable params
+class TwoCtorClass
+{
+    public int Id { get; }
+    public string Name { get; }
+    public TwoCtorClass(int id) { Id = id; Name = string.Empty; }
+    public TwoCtorClass(int id, string name) { Id = id; Name = name; }
+}
+
 class BasicTypeOneWriteOnlyProp
 {
     public int Value { private get; set; }
@@ -121,4 +148,36 @@ class ObjWithoutNullableEnum
 class ObjWithNullableEnum
 {
     public DayOfWeek? DayOfWeek { get; set; }
+}
+
+// init-only property — CopyTo cannot set it, CloneAs can via SetValue reflection
+class BasicTypeOneInitProp
+{
+    public int Value { get; init; }
+}
+
+// source type with matching name in different case to exercise case-sensitivity of RunThroughDataMembers
+class BasicTypeCasedProp
+{
+    public int value { get; set; }   // lowercase — does NOT match "Value" in RunThroughDataMembers (case-sensitive)
+}
+
+// for HasChangedFrom: type with a public field
+class BasicTypeOnePublicField
+{
+    public int Value;
+    public string? Name;
+}
+
+// for positional record: target with nullable ctor param
+record PositionalWithNullableCtorParam(int Id, string? Tag);
+
+// for positional record: target where only the smaller ctor can be satisfied
+// (the larger ctor needs "Extra" which the source doesn't have)
+class TwoCtorOnlySmallSatisfiable
+{
+    public int Id { get; }
+    public string Name { get; }
+    public TwoCtorOnlySmallSatisfiable(int id) { Id = id; Name = string.Empty; }
+    public TwoCtorOnlySmallSatisfiable(int id, string name, string extra) { Id = id; Name = name; _ = extra; }
 }

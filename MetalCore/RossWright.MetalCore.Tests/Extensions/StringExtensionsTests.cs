@@ -61,7 +61,7 @@ public class StringExtensionsTests
     public void RepeatDelimitersSplitTest()
     {
         string txt = "one  two\t three";
-        var parts = txt.SplitAroundQuotes(' ', '\t');
+        var parts = txt.SplitAroundQuotes([' ', '\t'], StringSplitOptions.RemoveEmptyEntries);
         Assert.Collection(parts,
             _ => _.ShouldBe("one"),
             _ => _.ShouldBe("two"),
@@ -159,5 +159,156 @@ public class StringExtensionsTests
             _ => _.ShouldBe("one"),
             _ => _.ShouldBe("two"),
             _ => _.ShouldBe("three"));
+    }
+
+    // RFC 4180 compliance tests
+
+    [Fact]
+    public void SplitAroundQuotes_ConsecutiveDelimiters_PreservesEmptyTokenWithNone()
+    {
+        // RFC 4180: empty fields between consecutive delimiters must be preserved
+        var parts = "field1,,field3".SplitAroundQuotes(',', StringSplitOptions.None);
+        Assert.Collection(parts,
+            _ => _.ShouldBe("field1"),
+            _ => _.ShouldBe(""),
+            _ => _.ShouldBe("field3"));
+    }
+
+    [Fact]
+    public void SplitAroundQuotes_EmptyQuotedField_StripsQuotesAndReturnsEmpty()
+    {
+        // RFC 4180 §2 rule 7: surrounding double-quotes are not part of the field value
+        var parts = "field1,\"\",field3".SplitAroundQuotes(',', StringSplitOptions.None);
+        Assert.Collection(parts,
+            _ => _.ShouldBe("field1"),
+            _ => _.ShouldBe(""),
+            _ => _.ShouldBe("field3"));
+    }
+
+    [Fact]
+    public void SplitAroundQuotes_EmptyInput_ReturnsSingleEmptyToken()
+    {
+        // Matches BCL string.Split(',') behaviour: empty string → one empty field
+        var parts = string.Empty.SplitAroundQuotes(',', StringSplitOptions.None);
+        Assert.Collection(parts,
+            _ => _.ShouldBe(""));
+    }
+
+    // Null / empty input
+
+    [Fact]
+    public void SplitAroundQuotes_NullInput_ReturnsEmpty()
+    {
+        string? txt = null;
+        var parts = txt.SplitAroundQuotes(',', StringSplitOptions.None);
+        parts.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void SplitAroundQuotes_EmptyInputWithRemoveEmptyEntries_ReturnsEmpty()
+    {
+        var parts = string.Empty.SplitAroundQuotes(',', StringSplitOptions.RemoveEmptyEntries);
+        parts.ShouldBeEmpty();
+    }
+
+    // Boundary tokens — leading/trailing delimiters
+
+    [Fact]
+    public void SplitAroundQuotes_LeadingDelimiter_PreservesEmptyFirstToken()
+    {
+        var parts = ",one,two".SplitAroundQuotes(',', StringSplitOptions.None);
+        Assert.Collection(parts,
+            _ => _.ShouldBe(""),
+            _ => _.ShouldBe("one"),
+            _ => _.ShouldBe("two"));
+    }
+
+    [Fact]
+    public void SplitAroundQuotes_TrailingDelimiter_PreservesEmptyLastToken()
+    {
+        var parts = "one,two,".SplitAroundQuotes(',', StringSplitOptions.None);
+        Assert.Collection(parts,
+            _ => _.ShouldBe("one"),
+            _ => _.ShouldBe("two"),
+            _ => _.ShouldBe(""));
+    }
+
+    [Fact]
+    public void SplitAroundQuotes_SingleToken_ReturnsSingleElement()
+    {
+        var parts = "hello".SplitAroundQuotes(',', StringSplitOptions.None);
+        Assert.Collection(parts,
+            _ => _.ShouldBe("hello"));
+    }
+
+    // Quoted field containing the delimiter character
+
+    [Fact]
+    public void SplitAroundQuotes_QuotedFieldContainsDelimiter_TreatsAsOneToken()
+    {
+        // The primary reason for this method's existence — delimiter inside quotes must not split
+        var parts = "one,\"two,three\",four".SplitAroundQuotes(',', StringSplitOptions.None);
+        Assert.Collection(parts,
+            _ => _.ShouldBe("one"),
+            _ => _.ShouldBe("two,three"),
+            _ => _.ShouldBe("four"));
+    }
+
+    [Fact]
+    public void SplitAroundQuotes_QuotedFieldAtStart_StripsQuotes()
+    {
+        var parts = "\"one,two\",three".SplitAroundQuotes(',', StringSplitOptions.None);
+        Assert.Collection(parts,
+            _ => _.ShouldBe("one,two"),
+            _ => _.ShouldBe("three"));
+    }
+
+    [Fact]
+    public void SplitAroundQuotes_QuotedFieldAtEnd_StripsQuotes()
+    {
+        var parts = "one,\"two,three\"".SplitAroundQuotes(',', StringSplitOptions.None);
+        Assert.Collection(parts,
+            _ => _.ShouldBe("one"),
+            _ => _.ShouldBe("two,three"));
+    }
+
+    // TrimEntries interaction with whitespace-only fields
+
+    [Fact]
+    public void SplitAroundQuotes_WhitespaceField_TrimEntriesReducesToEmpty()
+    {
+        var parts = "one,   ,two".SplitAroundQuotes([','], StringSplitOptions.TrimEntries);
+        Assert.Collection(parts,
+            _ => _.ShouldBe("one"),
+            _ => _.ShouldBe(""),
+            _ => _.ShouldBe("two"));
+    }
+
+    [Fact]
+    public void SplitAroundQuotes_WhitespaceField_TrimAndRemoveDropsIt()
+    {
+        // TrimEntries must run before RemoveEmptyEntries so whitespace-only fields are dropped
+        var parts = "one,   ,two".SplitAroundQuotes([','], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        Assert.Collection(parts,
+            _ => _.ShouldBe("one"),
+            _ => _.ShouldBe("two"));
+    }
+
+    // Empty splitChars — no splitting should occur
+
+    [Fact]
+    public void SplitAroundQuotes_EmptySplitChars_ReturnsSingleToken()
+    {
+        var parts = "hello,world".SplitAroundQuotes([], StringSplitOptions.None);
+        Assert.Collection(parts,
+            _ => _.ShouldBe("hello,world"));
+    }
+
+    [Fact]
+    public void SplitAroundQuotes_EmptySplitCharsAndEmptyInput_ReturnsSingleEmptyToken()
+    {
+        var parts = string.Empty.SplitAroundQuotes([], StringSplitOptions.None);
+        Assert.Collection(parts,
+            _ => _.ShouldBe(""));
     }
 }

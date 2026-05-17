@@ -51,8 +51,8 @@ public static class StringExtensions
     /// <returns>A sequence of tokens split around grouping regions.</returns>
     public static IEnumerable<string> SplitAroundQuotes(this string? txt, char[] splitChars, char[] groupDelimiters, StringSplitOptions options = StringSplitOptions.None)
     {
-        if (string.IsNullOrWhiteSpace(txt)) return Array.Empty<string>();
-        if (true != splitChars?.Any()) return [txt];
+        if (txt is null) return Array.Empty<string>();
+        if (true != splitChars?.Any()) return txt.Length == 0 ? [""] : [txt];
         if (groupDelimiters == null) groupDelimiters = Array.Empty<char>();
 
         List<string> parts = new();
@@ -62,10 +62,10 @@ public static class StringExtensions
         {
             if (groupDelimiters.Contains(txt[i]))
             {
-                if (i + 1 < txt.Length && txt[i + 1] == txt[i])
+                if (inQuotes && i + 1 < txt.Length && txt[i + 1] == txt[i])
                 {
                     partBuilder.Append(txt[i]);
-                    i++; // skip repeated group delimiters
+                    i++; // skip repeated group delimiters (escape sequence inside quotes)
                 }
                 else
                 {
@@ -74,10 +74,7 @@ public static class StringExtensions
             }
             else if (!inQuotes && splitChars.Contains(txt[i]))
             {
-                if (partBuilder.Length > 0)
-                {
-                    parts.Add(partBuilder.ToString());
-                }
+                parts.Add(partBuilder.ToString());
                 partBuilder.Clear();
             }
             else
@@ -85,19 +82,16 @@ public static class StringExtensions
                 partBuilder.Append(txt[i]);
             }
         }
-        if (partBuilder.Length > 0)
+        parts.Add(partBuilder.ToString());
+
+        if (options.HasFlag(StringSplitOptions.TrimEntries))
         {
-            parts.Add(partBuilder.ToString());
+            parts = parts.Select(_ => _.Trim()).ToList();
         }
 
         if (options.HasFlag(StringSplitOptions.RemoveEmptyEntries))
         {
             parts = parts.Where(_ => !string.IsNullOrWhiteSpace(_)).ToList();
-        }
-
-        if (options.HasFlag(StringSplitOptions.TrimEntries))
-        {
-            parts = parts.Select(_ => _.Trim()).ToList();
         }
 
         return parts.ToArray();

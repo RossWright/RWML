@@ -212,4 +212,60 @@ public class ThenCloneAsTests
         clone.ShouldNotBeNull();
         clone.Value.ShouldBe(1);
     }
+
+    // When the source task returns null, a provided init callback must NOT be invoked
+    [Fact]
+    public async Task ThenCloneAs_SingleObject_NullSource_WithInit_DoesNotInvokeCallback()
+    {
+        var callbackInvoked = false;
+
+        var result = await Task.FromResult<BasicTypeTwoProp?>(null)
+            .ThenCloneAs<BasicTypeTwoProp, BasicTypeOneProp>((src, clone) =>
+                callbackInvoked = true);
+
+        result.ShouldBeNull();
+        callbackInvoked.ShouldBeFalse();
+    }
+
+    // List overload with null init returns the same elements as without init
+    [Fact]
+    public async Task ThenCloneAs_List_WithNullInit_BehavesLikeNoInit()
+    {
+        var sources = new List<BasicTypeTwoProp> { new() { Value = 3, OtherValue = 30 } };
+
+        var result = await Task.FromResult(sources)
+            .ThenCloneAs<BasicTypeTwoProp, BasicTypeOneProp>(init: null);
+
+        result.ShouldHaveSingleItem();
+        result[0].Value.ShouldBe(3);
+    }
+
+    // Array overload with null init returns the same elements as without init
+    [Fact]
+    public async Task ThenCloneAs_Array_WithNullInit_BehavesLikeNoInit()
+    {
+        var sources = new BasicTypeTwoProp[] { new() { Value = 9, OtherValue = 90 } };
+
+        var result = await Task.FromResult(sources)
+            .ThenCloneAs<BasicTypeTwoProp, BasicTypeOneProp>(init: null);
+
+        result.ShouldHaveSingleItem();
+        result[0].Value.ShouldBe(9);
+    }
+
+    // Each cloned element in list overload is a distinct instance
+    [Fact]
+    public async Task ThenCloneAs_List_ClonesAreDistinctInstances()
+    {
+        var sources = new List<BasicTypeTwoProp>
+        {
+            new() { Value = 1 },
+            new() { Value = 1 },
+        };
+
+        var result = await Task.FromResult(sources)
+            .ThenCloneAs<BasicTypeTwoProp, BasicTypeOneProp>();
+
+        result[0].ShouldNotBeSameAs(result[1]);
+    }
 }

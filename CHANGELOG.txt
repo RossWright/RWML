@@ -1,4 +1,7 @@
-﻿[2026.1.0] - 5/13/2026
+﻿[2026.1.1] - 5/17/2026
+- MetalCore - Minor Fixes, additional Unit Tests and documentation.
+
+[2026.1.0] - 5/13/2026
 - MetalCommand - Initial public release.
 - MetalCore - Minor Fixes, additional Unit Tests and documentation.
 - MetalChain - Additional Unit Tests and documentation.

@@ -28,46 +28,42 @@ public static class CloneAsExtensions
     /// if (order.HasChangedFrom(original)) await SaveAsync(order);
     /// </code>
     /// </example>
-    public static T Clone<T>(this T copyFromObject, Action<T>? init = null)
-        where T : new() =>
+    public static T Clone<T>(this T copyFromObject, Action<T>? init = null) =>
         copyFromObject!.CloneAs<T>(init);
 
     /// <summary>
     /// Maps a collection of objects to a new array of <typeparamref name="T"/>,
     /// copying matching members from each element.
     /// </summary>
-    /// <typeparam name="T">The destination type; must have a public parameterless constructor.</typeparam>
+    /// <typeparam name="T">The destination type.</typeparam>
     /// <param name="copyFromCollection">The source collection.</param>
     /// <returns>An array of mapped <typeparamref name="T"/> instances.</returns>
-    public static T[] CloneAs<T>(this IEnumerable<object> copyFromCollection) 
-        where T : new() =>
+    public static T[] CloneAs<T>(this IEnumerable<object> copyFromCollection) =>
         copyFromCollection.Select(_ => _.CloneAs<T>()).ToArray();
 
     /// <summary>
     /// Maps a collection of objects to a new array of <typeparamref name="T"/>,
     /// invoking <paramref name="init"/> on each mapped instance.
     /// </summary>
-    /// <typeparam name="T">The destination type; must have a public parameterless constructor.</typeparam>
+    /// <typeparam name="T">The destination type.</typeparam>
     /// <param name="copyFromCollection">The source collection.</param>
     /// <param name="init">A callback invoked on each new <typeparamref name="T"/> after mapping.</param>
     /// <returns>An array of mapped <typeparamref name="T"/> instances.</returns>
-    public static T[] CloneAs<T>(this IEnumerable<object> copyFromCollection, Action<T> init)
-        where T : new() =>
+    public static T[] CloneAs<T>(this IEnumerable<object> copyFromCollection, Action<T> init) =>
         copyFromCollection.Select(source => source.CloneAs<T>(clone => init(clone))).ToArray();
 
     /// <summary>
     /// Maps a collection of objects to a new array of <typeparamref name="T"/>,
     /// passing each source and its mapped clone to <paramref name="init"/>.
     /// </summary>
-    /// <typeparam name="T">The destination type; must have a public parameterless constructor.</typeparam>
+    /// <typeparam name="T">The destination type.</typeparam>
     /// <param name="copyFromCollection">The source collection.</param>
     /// <param name="init">
     /// A callback receiving the source object and its mapped clone. Use this to
     /// populate members that require access to the original source.
     /// </param>
     /// <returns>An array of mapped <typeparamref name="T"/> instances.</returns>
-    public static T[] CloneAs<T>(this IEnumerable<object> copyFromCollection, Action<object, T> init) 
-        where T : new() =>
+    public static T[] CloneAs<T>(this IEnumerable<object> copyFromCollection, Action<object, T> init) =>
         copyFromCollection.Select(source => source.CloneAs<T>(clone => init(source, clone))).ToArray();
 
     /// <summary>
@@ -87,8 +83,7 @@ public static class CloneAsExtensions
     /// </code>
     /// </example>
     public static DTO[] CloneAs<DBO, DTO>(this IEnumerable<DBO> copyFromCollection, Action<DBO, DTO>? init = null)
-        where DBO : notnull 
-        where DTO : new() =>
+        where DBO : notnull =>
         copyFromCollection.Select(source => init != null 
             ? source.CloneAs<DTO>(clone => init(source, clone))
             : source.CloneAs<DTO>()
@@ -98,7 +93,7 @@ public static class CloneAsExtensions
     /// Maps a single object to a new instance of <typeparamref name="T"/>,
     /// copying all public, writable members that share a matching name.
     /// </summary>
-    /// <typeparam name="T">The destination type; must have a public parameterless constructor.</typeparam>
+    /// <typeparam name="T">The destination type.</typeparam>
     /// <param name="copyFromObject">The source object.</param>
     /// <param name="init">Optional callback invoked on the new instance after all members are copied.</param>
     /// <returns>A new <typeparamref name="T"/> with mapped member values.</returns>
@@ -107,12 +102,11 @@ public static class CloneAsExtensions
     /// var dto = dbUser.CloneAs&lt;UserDto&gt;();
     /// </code>
     /// </example>
-    public static T CloneAs<T>(this object copyFromObject, Action<T>? init = null) 
-        where T : new()
+    public static T CloneAs<T>(this object copyFromObject, Action<T>? init = null)
     {
-        var clone = new T();
+        var clone = CreateInstance<T>(copyFromObject);
         copyFromObject.CopyTo(clone);
-        if (init != null) init(clone);
+        init?.Invoke(clone);
         return clone!;
     }
 
@@ -165,6 +159,65 @@ public static class CloneAsExtensions
             }
             return null;
         }) == true;
+    }
+
+    private static T CreateInstance<T>(object source)
+    {
+        var type = typeof(T);
+
+        // Fast path: prefer a public parameterless constructor (covers all existing classes/init-property records)
+        if (type.GetConstructor(BindingFlags.Public | BindingFlags.Instance, Type.EmptyTypes) != null)
+            return Activator.CreateInstance<T>();
+
+        // Build a case-insensitive lookup of readable source properties
+        var sourceProps = source.GetType()
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.GetMethod?.IsPublic == true)
+            .ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
+
+        // Pick the public constructor with the most parameters whose names are all satisfiable from the source
+        var ctor = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+            .Where(c => c.GetParameters().Length > 0)
+            .OrderByDescending(c => c.GetParameters().Length)
+            .FirstOrDefault(c => c.GetParameters().All(p =>
+                p.Name != null && sourceProps.ContainsKey(p.Name)));
+
+        if (ctor == null)
+        {
+            var firstUnsatisfied = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+                .OrderByDescending(c => c.GetParameters().Length)
+                .First()
+                .GetParameters()
+                .First(p => p.Name == null || !sourceProps.ContainsKey(p.Name))
+                .Name ?? "<unknown>";
+            throw new InvalidOperationException(
+                $"No suitable constructor found on '{type.Name}'. " +
+                $"Ensure all constructor parameter names match public properties on the source type. " +
+                $"First unsatisfied parameter: '{firstUnsatisfied}'.");
+        }
+
+        var args = ctor.GetParameters().Select(p =>
+        {
+            var srcProp = sourceProps[p.Name!];
+            var value = srcProp.GetValue(source);
+            if (value == null) return null;
+
+            var destType = Nullable.GetUnderlyingType(p.ParameterType) ?? p.ParameterType;
+            var srcType = Nullable.GetUnderlyingType(srcProp.PropertyType) ?? srcProp.PropertyType;
+
+            if (!destType.IsAssignableFrom(srcType))
+            {
+                var converter = TypeDescriptor.GetConverter(srcType);
+                if (!converter.CanConvertTo(destType))
+                    throw new InvalidCastException(
+                        $"Cannot map constructor parameter '{p.Name}' on '{type.Name}': " +
+                        $"no conversion exists from {srcType.Name} to {destType.Name}.");
+                value = converter.ConvertTo(value, destType);
+            }
+            return value;
+        }).ToArray();
+
+        return (T)ctor.Invoke(args);
     }
 
     private static bool? RunThroughDataMembers(object copyFromObject, object copyToObject, Func<MemberInfo, object?, bool?> action)
@@ -267,7 +320,6 @@ public static class CloneAsExtensions
     /// <returns>A mapped <typeparamref name="DTO"/>, or <see langword="default"/> if the source was <see langword="null"/>.</returns>
     public static async Task<DTO?> ThenCloneAs<DBO, DTO>(this Task<DBO?> sourceTask, Action<DBO, DTO>? init = null)
         where DBO : notnull
-        where DTO : new()
     {
         var source = await sourceTask;
         if (source == null) return default;
@@ -286,8 +338,7 @@ public static class CloneAsExtensions
     /// <param name="init">Optional per-element callback for post-mapping initialization.</param>
     /// <returns>A list of mapped <typeparamref name="DTO"/> instances.</returns>
     public static async Task<List<DTO>> ThenCloneAs<DBO, DTO>(this Task<List<DBO>> copyFromCollectionTask, Action<DBO, DTO>? init = null)
-        where DBO : notnull
-        where DTO : new() =>
+        where DBO : notnull =>
         init == null ? (await copyFromCollectionTask).Select(_ => _.CloneAs<DTO>()).ToList()
             : (await copyFromCollectionTask).Select(source => source.CloneAs<DTO>(clone => init(source, clone))).ToList();
 
@@ -301,8 +352,7 @@ public static class CloneAsExtensions
     /// <param name="init">Optional per-element callback for post-mapping initialization.</param>
     /// <returns>An array of mapped <typeparamref name="DTO"/> instances.</returns>
     public static async Task<DTO[]> ThenCloneAs<DBO, DTO>(this Task<DBO[]> copyFromCollectionTask, Action<DBO, DTO>? init = null)
-        where DBO : notnull
-        where DTO : new() =>
+        where DBO : notnull =>
         init == null ? (await copyFromCollectionTask).Select(_ => _.CloneAs<DTO>()).ToArray()
             : (await copyFromCollectionTask).Select(source => source.CloneAs<DTO>(clone => init(source, clone))).ToArray();
 }

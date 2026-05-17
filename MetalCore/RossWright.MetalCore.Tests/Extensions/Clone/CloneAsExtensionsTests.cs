@@ -500,10 +500,67 @@ public class CloneAsExtensionsTests
         var original = new TestClass { Value = 42, Name = "Test" };
         var clone = original.Clone();
         clone.Value = 99;
-        
+
         var result = clone.HasChangedFrom(original);
-        
+
         result.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void HasChangedFrom_PublicField_Changed_ReturnsTrue()
+    {
+        var obj1 = new FieldClass { Value = 1 };
+        var obj2 = new FieldClass { Value = 2 };
+
+        obj1.HasChangedFrom(obj2).ShouldBeTrue();
+    }
+
+    [Fact]
+    public void HasChangedFrom_PublicField_Unchanged_ReturnsFalse()
+    {
+        var obj1 = new FieldClass { Value = 7 };
+        var obj2 = new FieldClass { Value = 7 };
+
+        obj1.HasChangedFrom(obj2).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void HasChangedFrom_IgnoredProperty_Changed_ReturnsFalse()
+    {
+        // [Ignore] properties are excluded from the scan — a change in them is invisible
+        var obj1 = new IgnoreClass { Value = 1, Ignored = 100 };
+        var obj2 = new IgnoreClass { Value = 1, Ignored = 999 };
+
+        obj1.HasChangedFrom(obj2).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void HasChangedFrom_ReferenceProperty_DifferentInstance_ReturnsTrue()
+    {
+        var obj1 = new RefClass { Inner = new TestClass { Value = 1 } };
+        var obj2 = new RefClass { Inner = new TestClass { Value = 1 } };
+
+        // Different instances even with equal values — reference comparison returns true
+        obj1.HasChangedFrom(obj2).ShouldBeTrue();
+    }
+
+    [Fact]
+    public void HasChangedFrom_ReferenceProperty_SameInstance_ReturnsFalse()
+    {
+        var inner = new TestClass { Value = 1 };
+        var obj1 = new RefClass { Inner = inner };
+        var obj2 = new RefClass { Inner = inner };
+
+        obj1.HasChangedFrom(obj2).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void HasChangedFrom_ReferenceProperty_BothNull_ReturnsFalse()
+    {
+        var obj1 = new RefClass { Inner = null };
+        var obj2 = new RefClass { Inner = null };
+
+        obj1.HasChangedFrom(obj2).ShouldBeFalse();
     }
 
     // ── Test helper classes ────────────────────────────────────────────────────
@@ -518,5 +575,21 @@ public class CloneAsExtensionsTests
     {
         public int Value { get; set; }
         public string Extra { get; set; } = string.Empty;
+    }
+
+    class FieldClass
+    {
+        public int Value;
+    }
+
+    class IgnoreClass
+    {
+        public int Value { get; set; }
+        [Ignore] public int Ignored { get; set; }
+    }
+
+    class RefClass
+    {
+        public TestClass? Inner { get; set; }
     }
 }
