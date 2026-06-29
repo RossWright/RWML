@@ -2,7 +2,6 @@ namespace RossWright.MetalCommand;
 
 /// <summary>
 /// Declares a class as an attribute-driven MetalCommand command.
-/// Replaces the <see cref="CommandDescriptor"/> property required by <see cref="ILegacyCommand"/>.
 /// </summary>
 /// <param name="name">Display name shown in help and run/completion messages.</param>
 /// <param name="invocations">

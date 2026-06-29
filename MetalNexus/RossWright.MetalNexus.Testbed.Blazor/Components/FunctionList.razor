@@ -1,0 +1,78 @@
+@inject TokenService TokenService
+
+<div class="function-panel">
+    <div class="function-panel-inner">
+        <button class="btn-test-all" @onclick="() => OnTestAll.InvokeAsync()" disabled="@Running">
+            ▶ Test All
+        </button>
+
+        @foreach (var group in _groups)
+        {
+            <div class="function-group-label">@group.Name</div>
+            @foreach (var fn in group.Functions)
+            {
+                <button class="btn-function @(Running ? "disabled" : "")"
+                        disabled="@Running"
+                        @onclick="() => OnRunFunction.InvokeAsync(fn.Key)">
+                    @fn.Label
+                </button>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback<string> OnRunFunction { get; set; }
+    [Parameter] public EventCallback OnTestAll { get; set; }
+    [Parameter] public bool Running { get; set; }
+
+    public IReadOnlyList<FunctionGroup> Groups => _groups;
+
+    private readonly List<FunctionGroup> _groups =
+    [
+        new("Basics",
+        [
+            new("list-customers",    "List Customers"),
+            new("get-customer",      "Get Customer"),
+            new("create-customer",   "Create Customer"),
+            new("update-customer",   "Update Customer"),
+            new("delete-customer",   "Delete Customer"),
+        ]),
+        new("Error Handling",
+        [
+            new("not-found-error",    "Not Found"),
+            new("validation-error",   "Validation Error"),
+            new("auth-error",         "Auth Error"),
+        ]),
+        new("Headers",
+        [
+            new("correlation-id",    "Correlation ID"),
+        ]),
+        new("Notes",
+        [
+            new("add-note",   "Add Note"),
+            new("webhook",    "Webhook"),
+        ]),
+        new("Files",
+        [
+            new("upload-avatar",  "Upload Avatar"),
+            new("upload-docs",    "Upload Documents"),
+            new("upload-profile", "Upload Profile Pack"),
+            new("download-doc",   "Download Document"),
+            new("direct-download","Direct Download Link"),
+        ]),
+        new("Advanced",
+        [
+            new("csv-export",    "CSV Export"),
+            new("content-neg",   "Content Negotiation"),
+            new("slow-request",  "Slow Request"),
+            new("deprecated",    "Deprecated"),
+            new("no-content",    "NoContent"),
+            new("mfa",           "AllowProvisional"),
+            new("adv-register",  "Adv. Register"),
+        ]),
+    ];
+
+    public sealed record FunctionItem(string Key, string Label);
+    public sealed record FunctionGroup(string Name, List<FunctionItem> Functions);
+}

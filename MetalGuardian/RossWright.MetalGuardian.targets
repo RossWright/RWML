@@ -1,0 +1,33 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<Import Project="..\RossWright.Metal.targets" />
+
+	<PropertyGroup>
+		<Title>MetalGuardian by Ross Wright</Title>
+		<Product>MetalGuardian</Product>
+    <Description>Authentication services for JWT login, token refresh, TOTP MFA, Blazor WebAssembly clients, ASP.NET Core servers, and MetalNexus integration.</Description>
+	</PropertyGroup>
+
+  <PropertyGroup>
+    <PackageReleaseNotes>$([System.IO.File]::ReadAllText("$(MSBuildThisFileDirectory)CHANGELOG.txt"))</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)CHANGELOG.txt">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)AI-USAGE.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\Docs\api-index\metalguardian-api.md">
+      <Pack>True</Pack>
+      <PackagePath>docs\</PackagePath>
+    </None>
+  </ItemGroup>
+
+</Project>

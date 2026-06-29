@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace RossWright.MetalChain;
 
@@ -42,24 +43,22 @@ internal class MetalChainOptionsBuilder()
         IgnoreHandler(typeof(THandler));
 
     public void Initialize(IServiceCollection services) =>
-        InitializeOrUpdate(services, DiscoveredConcreteTypes, LoadLog, this);
+        InitializeOrUpdate(services, DiscoveredConcreteTypes, this);
 
-    public static void InitializeOrUpdate(IServiceCollection services, Type[] types, ILoadLog? loadLog = null,
+    public static void InitializeOrUpdate(IServiceCollection services, Type[] types,
         MetalChainOptionsBuilder? options = null)
     {
         var registryServiceDesc = services.FirstOrDefault(_ => _.ServiceType == typeof(IMetalChainRegistry));
         var registry = registryServiceDesc?.ImplementationInstance as MetalChainRegistry;
         if (registry == null)
         {
-            registry = new MetalChainRegistry();
-            registry.LoadLog ??= loadLog;
+            registry = new MetalChainRegistry(options?.GetBootstrapLogger());
             ApplyOptions(registry, options);
             registry.AddHandlers(types);
             services.AddSingleton<IMetalChainRegistry>(registry);
         }
         else
         {
-            registry.LoadLog ??= loadLog;
             ApplyOptions(registry, options);
             registry.AddHandlers(types);
         }

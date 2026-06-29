@@ -1,0 +1,15 @@
+{
+  "name": "rosswright-metalnexus-blazor-js-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vitest unit tests for Interop.js",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "^2.0.0",
+    "jsdom": "^25.0.0",
+    "@vitest/coverage-v8": "^2.0.0"
+  }
+}

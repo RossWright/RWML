@@ -1,13 +1,14 @@
-﻿using System.Reflection;
+﻿using Microsoft.Extensions.Logging;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace RossWright;
 
 /// <summary>
-/// Extends <see cref="IUsesLoggerOptionsBuilder"/> with the ability to specify
+/// Extends <see cref="IUsesBootstrapLoggerOptionsBuilder"/> with the ability to specify
 /// which assemblies should be scanned for auto-registration.
 /// </summary>
-public interface IAssemblyScanningOptionsBuilder : IUsesLoggerOptionsBuilder
+public interface IAssemblyScanningOptionsBuilder : IUsesBootstrapLoggerOptionsBuilder
 {
     /// <summary>
     /// Adds a single assembly to the scan list.
@@ -21,8 +22,8 @@ public interface IAssemblyScanningOptionsBuilder : IUsesLoggerOptionsBuilder
 /// assemblies and lazily enumerates their concrete (non-abstract, non-interface)
 /// types on first access.
 /// </summary>
-public class AssemblyScanningOptionsBuilder(string moduleName)
-    : UsesLoggerOptionsBuilder(moduleName), 
+public class AssemblyScanningOptionsBuilder(string category)
+    : UsesBootstrapLoggerOptionsBuilder(category), 
     IAssemblyScanningOptionsBuilder    
 {
     /// <summary>The list of assemblies queued for scanning.</summary>
@@ -40,23 +41,38 @@ public class AssemblyScanningOptionsBuilder(string moduleName)
         {
             if (_discoveredConcreteTypes == null)
             {
+                var logger = GetBootstrapLogger();
                 List<Type> types = new();
+                using var topScope = logger?.BeginScope("Scanning assemblies for concrete types...");
                 foreach (var assembly in Assemblies)
                 {
                     try
                     {
-                        types.AddRange(assembly.GetTypes()
-                            .Where(_ => _.IsConcrete()));
+                        var foundTypes = assembly.GetTypes()
+                            .Where(_ => _.IsConcrete());
+                        types.AddRange(foundTypes);
+                        if (logger != null)
+                        {
+                            logger.LogTrace("Scanned assembly '{AssemblyName}' and found {TypeCount} concrete types.",
+                                assembly.FullName, foundTypes.Count());
+                        }
                     }
                     catch (ReflectionTypeLoadException ex)
                     {
-                        types.AddRange(ex.Types
+                        var foundTypes = ex.Types
                             .Where(_ => _ != null && _!.IsConcrete())
-                            .Cast<Type>());
+                            .Cast<Type>();
+                        types.AddRange(foundTypes);
+                        if (logger != null)
+                        {
+                            logger.LogTrace("Scanned assembly '{AssemblyName}' and found {TypeCount} concrete types.",
+                                assembly.FullName, foundTypes.Count());
+                        }
                     }
                     catch (Exception ex)
                     {
-                        LoadLog?.LogWarning($"Could not load types from assembly '{assembly.FullName}': {ex.Message}");
+                        logger?.LogWarning("Could not load types from assembly '{assembly}': {message}", 
+                            assembly.FullName, ex.Message);
                     }
                 }
                 _discoveredConcreteTypes = types.ToArray();
@@ -106,7 +122,7 @@ public static class IAssemblyScanningBuilderExtensions
     /// </summary>
     /// <param name="builder">The options builder.</param>
     public static void ScanAllAssemblies(this IAssemblyScanningOptionsBuilder builder) =>
-        builder.ScanAssemblies(FindAssemblies(null, builder.LoadLog));
+        builder.ScanAssemblies(FindAssemblies(null, builder));
 
     /// <summary>
     /// Discovers assemblies by walking loaded assembly references and adds them
@@ -114,7 +130,7 @@ public static class IAssemblyScanningBuilderExtensions
     /// </summary>
     /// <param name="builder">The options builder.</param>
     public static void ScanAllAssembliesViaReference(this IAssemblyScanningOptionsBuilder builder) =>
-        builder.ScanAssemblies(FindAssembliesViaReference(null, builder.LoadLog));
+        builder.ScanAssemblies(FindAssembliesViaReference(null, builder));
 
     /// <summary>
     /// Discovers assemblies by scanning the application base directory on disk
@@ -122,7 +138,7 @@ public static class IAssemblyScanningBuilderExtensions
     /// </summary>
     /// <param name="builder">The options builder.</param>
     public static void ScanAllAssembliesViaFileSystem(this IAssemblyScanningOptionsBuilder builder) =>
-        builder.ScanAssemblies(FindAssembliesViaFileSystem(null, builder.LoadLog));
+        builder.ScanAssemblies(FindAssembliesViaFileSystem(null, builder));
 
     /// <summary>
     /// Adds only assemblies whose names begin with one of the specified prefixes.
@@ -132,7 +148,7 @@ public static class IAssemblyScanningBuilderExtensions
     /// <param name="startingWith">One or more assembly name prefixes to match.</param>
     public static void ScanAssembliesStartingWith(this IAssemblyScanningOptionsBuilder builder,
         params string[] startingWith) =>
-        builder.ScanAssemblies(FindAssemblies(startingWith, builder.LoadLog));
+        builder.ScanAssemblies(FindAssemblies(startingWith, builder));
 
     /// <summary>
     /// Discovers assemblies via reference walk whose names begin with one of the
@@ -142,7 +158,7 @@ public static class IAssemblyScanningBuilderExtensions
     /// <param name="startingWith">One or more assembly name prefixes to match.</param>
     public static void ScanReferencedAssembliesStartingWith(this IAssemblyScanningOptionsBuilder builder,
         params string[] startingWith) =>
-        builder.ScanAssemblies(FindAssembliesViaReference(startingWith, builder.LoadLog));
+        builder.ScanAssemblies(FindAssembliesViaReference(startingWith, builder));
 
     /// <summary>
     /// Discovers assemblies via file-system scan whose names begin with one of
@@ -152,7 +168,7 @@ public static class IAssemblyScanningBuilderExtensions
     /// <param name="startingWith">One or more assembly name prefixes to match.</param>
     public static void ScanAssembliesInFolderStartingWith(this IAssemblyScanningOptionsBuilder builder,
         params string[] startingWith) =>
-        builder.ScanAssemblies(FindAssembliesViaFileSystem(startingWith, builder.LoadLog));
+        builder.ScanAssemblies(FindAssembliesViaFileSystem(startingWith, builder));
 
     /// <summary>
     /// Adds the assemblies that contain the specified types to the scan list.
@@ -181,18 +197,18 @@ public static class IAssemblyScanningBuilderExtensions
         this IAssemblyScanningOptionsBuilder config) =>
             config.ScanAssembly(typeof(T).Assembly);
 
-    private static Assembly[] FindAssemblies(string[]? prefixes, ILoadLog? log)
+    private static Assembly[] FindAssemblies(string[]? prefixes, IAssemblyScanningOptionsBuilder? builder)
     {
         if (RuntimeInformation.ProcessArchitecture == Architecture.Wasm)
-            return FindAssembliesViaReference(prefixes, log);
+            return FindAssembliesViaReference(prefixes, builder);
         else
-            return FindAssembliesViaFileSystem(prefixes, log);
+            return FindAssembliesViaFileSystem(prefixes, builder);
     }
 
-    private static Assembly[] FindAssembliesViaFileSystem(string[]? prefixes, ILoadLog? log)
+    private static Assembly[] FindAssembliesViaFileSystem(string[]? prefixes, IAssemblyScanningOptionsBuilder? builder)
     {
-        log?.LogTrace($"Loading local assemblies");
-        using var topLogScope = log?.BeginScope();
+        var log = builder?.GetBootstrapLogger();
+        using var topLogScope = log?.BeginScope("Loading local assemblies");
         var asmFiles = prefixes?.SelectMany(prefix =>
             Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, $"{prefix}*.dll"))
             ?? Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, $"*.dll");
@@ -213,18 +229,17 @@ public static class IAssemblyScanningBuilderExtensions
         return assemblies.ToArray();
     }
 
-    private static Assembly[] FindAssembliesViaReference(string[]? prefixes, ILoadLog? log)
+    private static Assembly[] FindAssembliesViaReference(string[]? prefixes, IAssemblyScanningOptionsBuilder? builder)
     {
-        log?.LogTrace($"Loading referenced assemblies");
-        using var topLogScope = log?.BeginScope();
+        var log = builder?.GetBootstrapLogger();
+        using var topLogScope = log?.BeginScope("Loading referenced assemblies");
         var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies()
             .WhereIf(prefixes?.Any() == true, _ => prefixes!.Any(prefix => _.FullName?.StartsWith(prefix) ?? false))
             .DistinctBy(_ => _.FullName)
             .ToDictionary(_ => _.FullName!, _ => _);
         if (log != null)
         {
-            log.LogTrace($"Found {loadedAssemblies.Count()} pre-loaded assemblies:");
-            using var logScope = log.BeginScope();
+            using var logScope = log.BeginScope($"Found {loadedAssemblies.Count()} pre-loaded assemblies:");
             foreach (var assembly in loadedAssemblies.Values.OrderBy(_ => _.FullName))
                 log.LogTrace(assembly.FullName!);
         }
@@ -244,8 +259,7 @@ public static class IAssemblyScanningBuilderExtensions
             .ToArray();
         if (log != null)
         {
-            log.LogTrace($"Found {referencedAssemblies.Count()} more referenced assemblies that are now loaded:");
-            using var logScope = log.BeginScope();
+            using var logScope = log.BeginScope($"Found {referencedAssemblies.Count()} more referenced assemblies that are now loaded:");
             foreach (var assembly in referencedAssemblies.OrderBy(_ => _.FullName))
                 log.LogTrace(assembly.FullName!);
         }

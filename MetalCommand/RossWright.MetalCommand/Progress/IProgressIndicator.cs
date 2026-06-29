@@ -1,8 +1,8 @@
 ﻿namespace RossWright.MetalCommand;
 
 /// <summary>
-/// Renders a progress value (0.0–1.0) as a fixed-width string for inline display in the console.
-/// Implement this interface to supply a custom indicator to <see cref="ShowProgressConsoleExtensions.ShowProgress"/>.
+/// Renders a progress value (0.0 to 1.0) as a fixed-width string for inline display in the console.
+/// Implement this interface to supply a custom indicator to <c>ShowProgress</c>.
 /// </summary>
 public interface IProgressIndicator
 {

@@ -6,8 +6,13 @@
     <ProjectReference Include="..\RossWright.MetalCommand.Abstractions\RossWright.MetalCommand.Abstractions.csproj" />
     <ProjectReference Include="..\RossWright.MetalCommand\RossWright.MetalCommand.csproj" />
     <ProjectReference Include="..\RossWright.MetalCommand.Data\RossWright.MetalCommand.Data.csproj" />
-    <ProjectReference Include="..\RossWright.MetalCommand.Data.MySql\RossWright.MetalCommand.Data.MySql.csproj" />
+    <ProjectReference Include="..\RossWright.MetalCommand.Data.MySql\RossWright.MetalCommand.Data.MySql.csproj" Condition="'$(TargetFramework)' != 'net10.0'" />
     <ProjectReference Include="..\RossWright.MetalCommand.Data.SqlServer\RossWright.MetalCommand.Data.SqlServer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Test-only EF Core Sqlite dependency; no fixed SQLitePCLRaw.lib_e_sqlite3 version exists. -->
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-2m69-gcr7-jv3q" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">

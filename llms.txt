@@ -1,0 +1,152 @@
+# Ross Wright Metal Libraries
+
+This repository contains the Ross Wright Metal Libraries, a .NET library suite for Blazor WebAssembly, ASP.NET Core, mediator-style request dispatch, dependency injection, authentication, and shared application utilities.
+
+Targets: .NET 8, .NET 9, .NET 10.
+Primary namespace for most public APIs: RossWright.
+Messaging contracts namespace: RossWright.Messaging.
+
+AI-facing docs:
+- Per-family AI usage cards: <Family>/AI-USAGE.md.
+- Public API indexes: Docs/api-index/*.md.
+- Task-first recipes: Docs/recipes/*.md.
+- NuGet packages include AI-USAGE.md and docs/<family>-api.md in addition to README.md and XML docs.
+
+## Released package families
+
+Use these libraries now:
+
+- MetalCore
+- MetalChain
+- MetalCommand
+- MetalInjection
+- MetalNexus
+- MetalGuardian
+
+Other Metal libraries in the repository may be unreleased or experimental unless their package README says otherwise.
+
+## Released packages
+
+### MetalCore
+
+- RossWright.MetalCore: extension methods, validation, mapping, options builders, bootstrap logging, signing, common utilities.
+- RossWright.MetalCore.Blazor: Blazor WebAssembly browser local storage, JS script loading, and WebAssemblyHostBuilder helpers.
+- RossWright.MetalCore.Data: EF Core helpers, RefreshTable, FK error handling, timing interceptor, GeoCoder.
+- RossWright.MetalCore.Server: ASP.NET Core messaging contracts, SMTP email service, WebApplicationBuilder helpers.
+- RossWright.MetalCore.Populi: static test data generator.
+
+Common APIs:
+- string?.CalcLevenshteinDistanceTo(string?) in namespace RossWright.
+- string.SpaceOut() in namespace RossWright.
+- IQueryable<T>.WhereIf(...) and IEnumerable<T>.WhereIf(...) in namespace RossWright.
+- object.CopyTo(...), object.CloneAs<T>(), object.HasChangedFrom(...) in namespace RossWright.
+- IValidatable, IsValid(), AssertValid() in namespace RossWright.
+
+### MetalChain
+
+- RossWright.MetalChain: mediator implementation and DI registration.
+- RossWright.MetalChain.Abstractions: IMediator, IRequest, IRequest<TResponse>, IRequestHandler contracts, request behavior attributes.
+
+Common APIs:
+- IServiceCollection.AddMetalChain(...) in namespace RossWright.
+- IRequest and IRequest<TResponse> in namespace RossWright.
+- IRequestHandler<TRequest> and IRequestHandler<TRequest,TResponse> in namespace RossWright.
+- IMediator.Send(...), SendOrDefault(...), SendOrIgnore(...), Listen(...) in namespace RossWright.
+
+### MetalCommand
+
+- RossWright.MetalCommand: interactive console application host, command discovery, DI, configuration, middleware, progress indicators, and REPL execution.
+- RossWright.MetalCommand.Abstractions: ICommand, command attributes, IConsole, ICommandExecutor, middleware, environment contracts, and builder contracts.
+- RossWright.MetalCommand.Data: EF Core environment-aware DbContext factory, CSV loading, and built-in database management commands.
+- RossWright.MetalCommand.Data.SqlServer: SQL Server database environment registration helpers.
+- RossWright.MetalCommand.Data.MySql: MySQL/MariaDB database environment registration helpers. In 2026.2 this package targets .NET 8 and .NET 9 only.
+- RossWright.MetalCommand.Http: environment-aware HTTP client routing, named connection groups, and ping command.
+
+Common APIs:
+- ConsoleApplication.CreateBuilder() in namespace RossWright.MetalCommand.
+- ICommand, CommandAttribute, ArgAttribute, EnvironmentArgAttribute, CommandResult, and IConsole in namespace RossWright.MetalCommand.
+- IConsoleApplicationBuilder.AddCommands(...), AddServices(...), AddMiddleware<T>(), SetPromptFactory(...), and Build() in namespace RossWright.MetalCommand.
+- AddDatabaseContextFactory<TDbContext>(...), IDatabaseContextFactory<TDbContext>, CsvFile<T>, AddSqlServer(...), and AddMySql(...) in namespace RossWright.MetalCommand.Data.
+- AddHttpConnections(...), IHttpConnectionsBuilder, IHttpConnectionResolver, and AddPingCommand() in namespace RossWright.MetalCommand.Http or RossWright.MetalCommand.
+
+### MetalInjection
+
+- RossWright.MetalInjection: dependency injection engine for non-host or console scenarios.
+- RossWright.MetalInjection.Abstractions: registration attributes and marker interfaces.
+- RossWright.MetalInjection.Blazor: Blazor WebAssembly setup.
+- RossWright.MetalInjection.Server: ASP.NET Core setup.
+
+Common APIs:
+- WebApplicationBuilder.AddMetalInjection(...) in namespace RossWright.
+- WebAssemblyHostBuilder.AddMetalInjection(...) in namespace RossWright.
+- IServiceCollection.BuildMetalInjectionServiceProvider(...) in namespace RossWright.
+- [Singleton<T>], [ScopedService<T>], [TransientService<T>], [Inject], [ConfigSection] in namespace RossWright.
+- ISingleton<T>, IScopedService<T>, ITransientService<T> in namespace RossWright.
+
+### MetalNexus
+
+- RossWright.MetalNexus.Abstractions: [ApiRequest], endpoint attributes, upload attributes, raw request/response contracts.
+- RossWright.MetalNexus.Server: ASP.NET Core generated API endpoint server.
+- RossWright.MetalNexus.Blazor: Blazor WebAssembly client and file upload components.
+- RossWright.MetalNexus: non-Blazor client.
+
+Common APIs:
+- [ApiRequest] in namespace RossWright.
+- [Authenticated], [Anonymous], [FromHeader], [UploadLimit], [NoUploadLimit], [ProducesError] in namespace RossWright.
+- WebApplicationBuilder.AddMetalNexusServer(...) in namespace RossWright.
+- WebApplication.UseMetalNexusServer() in namespace RossWright.
+- WebAssemblyHostBuilder.AddMetalNexusClient(...) in namespace RossWright.
+- IMetalNexusUrlHelper in namespace RossWright.
+- FileInput and BrowserFile for Blazor file upload in namespace RossWright.
+
+Typical Blazor WebAssembly client setup:
+- builder.AddHttpClient().AddMetalNexusClient(options => options.ScanAssemblyContaining<MyRequest>());
+
+Typical ASP.NET Core server setup:
+- builder.AddMetalNexusServer(options => options.ScanAssemblyContaining<MyHandler>());
+- app.UseMetalNexusServer();
+
+### MetalGuardian
+
+- RossWright.MetalGuardian.Abstractions: authentication contracts and built-in request types.
+- RossWright.MetalGuardian.Server: ASP.NET Core authentication, JWT, repositories, current user.
+- RossWright.MetalGuardian.Blazor: Blazor WebAssembly auth state and authenticated client setup.
+- RossWright.MetalGuardian: non-Blazor client services.
+- RossWright.MetalGuardian.MFA.TOTP: shared TOTP contracts.
+- RossWright.MetalGuardian.Server.MFA.TOTP: server-side TOTP MFA.
+
+Common APIs:
+- WebApplicationBuilder.AddMetalGuardianServer(...) in namespace RossWright.
+- WebAssemblyHostBuilder.AddMetalGuardianClient(...) in namespace RossWright.
+- UseMetalNexusAuthenticationEndpoints() in namespace RossWright.
+- UseJwtConfiguration(...) and UseJwtConfigurationSection(...) in namespace RossWright.
+- IMetalGuardianAuthenticationClient in namespace RossWright.
+- ICurrentUser in namespace RossWright.
+
+## Package selection guidance
+
+For Blazor WebAssembly clients:
+- Use RossWright.MetalCore.Blazor for browser utilities.
+- Use RossWright.MetalInjection.Blazor for dependency injection setup.
+- Use RossWright.MetalNexus.Blazor for mediator-over-HTTP client calls.
+- Use RossWright.MetalGuardian.Blazor for authentication state and authenticated calls.
+
+For ASP.NET Core servers:
+- Use RossWright.MetalCore.Server for server helpers and messaging contracts.
+- Use RossWright.MetalInjection.Server for dependency injection setup.
+- Use RossWright.MetalNexus.Server for generated API endpoints.
+- Use RossWright.MetalGuardian.Server for authentication.
+
+For shared contracts projects:
+- Use RossWright.MetalChain.Abstractions for IRequest and IRequest<TResponse>.
+- Use RossWright.MetalNexus.Abstractions for [ApiRequest] and endpoint metadata.
+- Use RossWright.MetalGuardian.Abstractions for shared auth request/response types.
+- Use RossWright.MetalInjection.Abstractions only if service registration attributes must live in a contracts/domain assembly.
+
+## Common mistakes
+
+- Missing `using RossWright;` prevents most extension methods and setup methods from appearing.
+- For MetalNexus, shared request types must be scanned on client and server.
+- For MetalChain, handlers must be registered or scanned before IMediator.Send can dispatch requests.
+- Use the Blazor packages from WebAssembly projects and the Server packages from ASP.NET Core server projects.
+- For MetalCore string similarity, CalcLevenshteinDistanceTo returns a normalized similarity score, not a raw edit count.

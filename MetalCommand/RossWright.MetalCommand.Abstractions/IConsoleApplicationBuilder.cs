@@ -1,10 +1,11 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace RossWright.MetalCommand;
 
 /// <summary>
-/// Configures a <see cref="ConsoleApplication"/> before it is built. Provides access to
+/// Configures a MetalCommand console application before it is built. Provides access to
 /// commands, DI services, configuration, and pipeline options.
 /// </summary>
 public interface IConsoleApplicationBuilder : IOptionsBuilder
@@ -23,6 +24,12 @@ public interface IConsoleApplicationBuilder : IOptionsBuilder
     /// When <see langword="null"/> the default prompt (<c>&gt;</c>) is used.
     /// </summary>
     Func<IDictionary<string, string>, string>? PromptFactory { get; set; }
+
+    /// <summary>
+    /// Configures the logging pipeline for the application. Services registered here
+    /// are available via <see cref="ILoggerFactory"/> and <see cref="ILogger{T}"/> in DI.
+    /// </summary>
+    ILoggingBuilder Logging { get; }
 
     /// <summary>The DI service collection used to register services consumed by commands.</summary>
     IServiceCollection Services { get; }
@@ -54,6 +61,10 @@ public interface IConsoleApplicationBuilder : IOptionsBuilder
     /// </summary>
     IConsoleApplicationBuilder AddMiddleware<TMiddleware>() where TMiddleware : class, ICommandMiddleware;
 
+    /// <summary>
+    /// Sets the service provider factory used when building the application service provider.
+    /// </summary>
+    /// <param name="serviceProviderFactory">The factory used to create the application service provider.</param>
     void SetServiceProviderFactory(IServiceProviderFactory<IServiceCollection> serviceProviderFactory);
 }
 

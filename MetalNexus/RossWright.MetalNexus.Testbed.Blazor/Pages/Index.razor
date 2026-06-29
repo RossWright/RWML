@@ -1,0 +1,807 @@
+@page "/"
+@inject IMediator Mediator
+@inject TokenService TokenService
+@inject IMetalNexusUrlHelper UrlHelper
+@inject HttpClient Http
+@inject ILogger<Index> Logger
+
+<FunctionList @ref="_functionList"
+              OnRunFunction="RunFunction"
+              OnTestAll="RunAll"
+              Running="_running" />
+
+<TutorialLog @ref="_log" />
+
+@code {
+    private FunctionList _functionList = null!;
+    private TutorialLog _log = null!;
+    private bool _running;
+
+    // ── seeded customer IDs ───────────────────────────────────────────────────
+    // We keep track of a created customer id so delete/update demos don't break seeded data.
+    private int _createdCustomerId;
+    private int _createdDocumentId;
+
+    // ── dispatcher ───────────────────────────────────────────────────────────
+    private async Task RunFunction(string key)
+    {
+        if (_running) return;
+        _running = true;
+        StateHasChanged();
+        try
+        {
+            await DispatchAsync(key, CancellationToken.None);
+        }
+        finally
+        {
+            _running = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RunAll()
+    {
+        if (_running) return;
+        _running = true;
+        StateHasChanged();
+
+        // Save whatever token was active before Test All started
+        var savedToken    = TokenService.Token;
+        var savedUsername = TokenService.Username;
+
+        try
+        {
+            // Ensure we start as admin so all authenticated tests can run
+            await EnsureLoggedInAsAsync("admin", "admin", CancellationToken.None);
+
+            // Snapshot groups before the loop — Blazor re-renders between awaits
+            // can cause _functionList.Groups to return a new list reference,
+            // which would silently restart or abort the nested foreach.
+            var steps = _functionList.Groups
+                .SelectMany(g => g.Functions)
+                .ToList();
+
+            foreach (var fn in steps)
+            {
+                // Skip direct-download (no HTTP call, just URL construction; included inline)
+                if (fn.Key == "direct-download") continue;
+
+                // Auth-error test must run as manager (admin can delete, so it won't 403)
+                if (fn.Key == "auth-error")
+                {
+                    await EnsureLoggedInAsAsync("manager", "manager", CancellationToken.None);
+                    await DispatchAsync(fn.Key, CancellationToken.None);
+                    await EnsureLoggedInAsAsync("admin", "admin", CancellationToken.None);
+                }
+                else
+                {
+                    await DispatchAsync(fn.Key, CancellationToken.None);
+                }
+            }
+        }
+        finally
+        {
+            // Restore the original token state
+            if (savedToken is { Length: > 0 })
+                TokenService.SetToken(savedUsername, savedToken);
+            else
+                TokenService.ClearToken();
+
+            _running = false;
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>Logs in as the given user if not already authenticated as them.</summary>
+    private async Task EnsureLoggedInAsAsync(string username, string password, CancellationToken ct)
+    {
+        if (TokenService.Username == username) return;
+        var resp = await Http.PostAsJsonAsync("/auth/token", new { username, password }, ct);
+        resp.EnsureSuccessStatusCode();
+        var tr = await resp.Content.ReadFromJsonAsync<TokenResponse>(cancellationToken: ct);
+        if (tr?.Token is { Length: > 0 } token)
+            TokenService.SetToken(username, token);
+    }
+
+    private sealed record TokenResponse(string Token);
+
+    private Task DispatchAsync(string key, CancellationToken ct) => key switch
+    {
+        "list-customers"   => RunListCustomersAsync(ct),
+        "get-customer"     => RunGetCustomerAsync(ct),
+        "create-customer"  => RunCreateCustomerAsync(ct),
+        "update-customer"  => RunUpdateCustomerAsync(ct),
+        "delete-customer"  => RunDeleteCustomerAsync(ct),
+        "not-found-error"  => RunNotFoundErrorAsync(ct),
+        "validation-error" => RunValidationErrorAsync(ct),
+        "auth-error"       => RunAuthErrorAsync(ct),
+        "correlation-id"   => RunCorrelationIdAsync(ct),
+        "add-note"         => RunAddNoteAsync(ct),
+        "webhook"          => RunWebhookAsync(ct),
+        "upload-avatar"    => RunUploadAvatarAsync(ct),
+        "upload-docs"      => RunUploadDocsAsync(ct),
+        "upload-profile"   => RunUploadProfileAsync(ct),
+        "download-doc"     => RunDownloadDocAsync(ct),
+        "direct-download"  => RunDirectDownloadAsync(ct),
+        "csv-export"       => RunCsvExportAsync(ct),
+        "content-neg"      => RunContentNegAsync(ct),
+        "slow-request"     => RunSlowRequestAsync(ct),
+        "deprecated"       => RunDeprecatedAsync(ct),
+        "no-content"       => RunNoContentAsync(ct),
+        "mfa"              => RunMfaAsync(ct),
+        "adv-register"     => RunAdvRegisterAsync(ct),
+        _ => Task.CompletedTask
+    };
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 1. List Customers
+    // ══════════════════════════════════════════════════════════════════════════
+    private async Task RunListCustomersAsync(CancellationToken ct)
+    {
+        try
+        {
+            var result = await Mediator.Send(new GetCustomersRequest(), ct);
+            _log.Append(new LogEntry
+            {
+                Title     = "List Customers",
+                Feature   = "[Anonymous]  •  Auto GET (0 props)",
+                Narrative = "GetCustomersRequest has no properties, so MetalNexus Auto-selects GET. " +
+                            "The [Anonymous] attribute overrides the server-wide RequiresAuthenticationByDefault = true, so no token is needed.",
+                Code      = "var result = await Mediator.Send(new GetCustomersRequest());",
+                Result    = $"{result.Customers.Count} customer(s) returned:\n" +
+                            string.Join("\n", result.Customers.Select(c => $"  [{c.Id}] {c.Name} — {c.Email}")),
+                Takeaway  = "Zero-property requests automatically use GET, even with default auth required globally."
+            });
+        }
+        catch (Exception ex) { AppendError("List Customers", ex); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 2. Get Customer
+    // ══════════════════════════════════════════════════════════════════════════
+    private async Task RunGetCustomerAsync(CancellationToken ct)
+    {
+        try
+        {
+            var dto = await Mediator.Send(new GetCustomerRequest { Id = 1 }, ct);
+            _log.Append(new LogEntry
+            {
+                Title     = "Get Customer by ID",
+                Feature   = "[Anonymous]  •  Auto GET with query param",
+                Narrative = "A single-property request still resolves to GET. The property is serialised as a query-string parameter (?id=1).",
+                Code      = "var dto = await Mediator.Send(new GetCustomerRequest { Id = 1 });",
+                Result    = $"[{dto.Id}] {dto.Name}  |  {dto.Email}  |  {dto.Phone}",
+                Takeaway  = "Single-property requests use GET with query-string binding — no route templates needed."
+            });
+        }
+        catch (Exception ex) { AppendError("Get Customer", ex); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 3. Create Customer
+    // ══════════════════════════════════════════════════════════════════════════
+    private async Task RunCreateCustomerAsync(CancellationToken ct)
+    {
+        try
+        {
+            var dto = await Mediator.Send(new CreateCustomerRequest
+            {
+                Name  = "Test User",
+                Email = $"test-{Guid.NewGuid():N}@example.com",
+                Phone = "555-0199"
+            }, ct);
+            _createdCustomerId = dto.Id;
+            _log.Append(new LogEntry
+            {
+                Title     = "Create Customer",
+                Feature   = "[Authenticated]  •  PostViaBody  •  201 Created",
+                Narrative = "The request is sent as a JSON body (PostViaBody). The handler sets " +
+                            "IMetalNexusResponseContext.StatusCode = HttpStatusCode.Created, so the client receives 201.",
+                Code      = "var dto = await Mediator.Send(new CreateCustomerRequest { Name = \"Test User\", ... });",
+                Result    = $"Created [{dto.Id}] {dto.Name} — HTTP 201 Created",
+                Takeaway  = "SuccessStatusCode can be declared on the [ApiRequest] attribute or set dynamically in the handler."
+            });
+        }
+        catch (Exception ex) { AppendError("Create Customer", ex); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 4. Update Customer
+    // ══════════════════════════════════════════════════════════════════════════
+    private async Task RunUpdateCustomerAsync(CancellationToken ct)
+    {
+        var id = _createdCustomerId > 0 ? _createdCustomerId : 2;
+        try
+        {
+            var dto = await Mediator.Send(new UpdateCustomerRequest
+            {
+                Id    = id,
+                Name  = "Updated Name",
+                Email = $"updated-{Guid.NewGuid():N}@example.com",
+                Phone = "555-0200"
+            }, ct);
+            _log.Append(new LogEntry
+            {
+                Title     = "Update Customer",
+                Feature   = "[Authenticated(Admin, Manager)]  •  PutViaBody  •  Location header",
+                Narrative = "The handler injects IMetalNexusResponseContext to append a Location header pointing at the updated resource.",
+                Code      = $"var dto = await Mediator.Send(new UpdateCustomerRequest {{ Id = {id}, ... }});",
+                Result    = $"Updated [{dto.Id}] {dto.Name}",
+                Takeaway  = "IMetalNexusResponseContext gives handlers full control over response headers and status codes."
+            });
+        }
+        catch (Exception ex) { AppendError("Update Customer", ex); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 5. Delete Customer
+    // ══════════════════════════════════════════════════════════════════════════
+    private async Task RunDeleteCustomerAsync(CancellationToken ct)
+    {
+        var id = _createdCustomerId > 0 ? _createdCustomerId : 0;
+        if (id == 0)
+        {
+            AppendSkip("Delete Customer", "No customer was created this session; skipping to protect seeded data.");
+            return;
+        }
+        try
+        {
+            await Mediator.Send(new DeleteCustomerRequest { Id = id }, ct);
+            _createdCustomerId = 0;
+            _log.Append(new LogEntry
+            {
+                Title     = "Delete Customer",
+                Feature   = "[Authenticated(Admin)]  •  Delete",
+                Narrative = "DELETE method, restricted to Admin role. The handler verifies the customer exists before removing it.",
+                Code      = $"await Mediator.Send(new DeleteCustomerRequest {{ Id = {id} }});",
+                Result    = $"Customer [{id}] deleted successfully (204 / no content).",
+                Takeaway  = "Role-scoped authentication is declared directly on the request type — no separate policy setup needed."
+            });
+        }
+        catch (Exception ex) { AppendError("Delete Customer", ex); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 6. Not Found Error
+    // ══════════════════════════════════════════════════════════════════════════
+    private async Task RunNotFoundErrorAsync(CancellationToken ct)
+    {
+        try
+        {
+            _ = await Mediator.Send(new GetCustomerRequest { Id = 99999 }, ct);
+            AppendWarning("Not Found Error", "Expected CustomerNotFoundException but no exception was thrown.");
+        }
+        catch (CustomerNotFoundException ex)
+        {
+            _log.Append(new LogEntry
+            {
+                Title     = "Not Found Error",
+                Feature   = "Exception marshalling — [ProducesError<CustomerNotFoundException>]",
+                Narrative = "The server throws CustomerNotFoundException (a shared type). MetalNexus serialises it " +
+                            "and reconstructs the exact type on the client.",
+                Code      = "catch (CustomerNotFoundException ex)  // exact type received on client",
+                Result    = $"✓ Caught CustomerNotFoundException: {ex.Message}",
+                Takeaway  = "Shared exception types are fully round-tripped — no need to inspect status codes manually."
+            });
+        }
+        catch (Exception ex) { AppendError("Not Found Error", ex); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 7. Validation Error
+    // ══════════════════════════════════════════════════════════════════════════
+    private async Task RunValidationErrorAsync(CancellationToken ct)
+    {
+        // Create a customer, then try to create another with the same email
+        const string email = "dup@example.com";
+        try { await Mediator.Send(new CreateCustomerRequest { Name = "Dup Seed", Email = email, Phone = "" }, ct); }
+        catch { /* ignore if already exists */ }
+
+        try
+        {
+            _ = await Mediator.Send(new CreateCustomerRequest { Name = "Dup Again", Email = email, Phone = "" }, ct);
+            AppendWarning("Validation Error", "Expected DuplicateEmailException but no exception was thrown.");
+        }
+        catch (DuplicateEmailException ex)
+        {
+            _log.Append(new LogEntry
+            {
+                Title     = "Validation Error",
+                Feature   = "[ProducesError<DuplicateEmailException>]  •  422 Unprocessable",
+                Narrative = "Submitting a duplicate email causes the handler to throw DuplicateEmailException " +
+                            "(a subclass of ValidationException). MetalNexus maps it to HTTP 422 and restores the type client-side.",
+                Code      = "catch (DuplicateEmailException ex)  // subclass of ValidationException",
+                Result    = $"✓ Caught DuplicateEmailException: {ex.Message}",
+                Takeaway  = "Exception hierarchies are preserved — catch the base or the leaf type, your choice."
+            });
+        }
+        catch (Exception ex) { AppendError("Validation Error", ex); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 8. Auth Error
+    // ══════════════════════════════════════════════════════════════════════════
+    private async Task RunAuthErrorAsync(CancellationToken ct)
+    {
+        if (TokenService.Username == "admin")
+        {
+            AppendSkip("Auth Error", "You are authenticated as admin (who can delete). " +
+                "Switch to 'manager' or 'unauthenticated' to see a 403.");
+            return;
+        }
+        try
+        {
+            await Mediator.Send(new DeleteCustomerRequest { Id = 1 }, ct);
+            AppendWarning("Auth Error", "Expected NotAuthorizedException but no exception was thrown.");
+        }
+        catch (NotAuthorizedException ex)
+        {
+            _log.Append(new LogEntry
+            {
+                Title     = "Auth Error",
+                Feature   = "[Authenticated(Admin)]  •  403 → NotAuthorizedException",
+                Narrative = "Calling an Admin-only endpoint as Manager (or unauthenticated) yields HTTP 403. " +
+                            "MetalNexus reconstructs it as NotAuthorizedException on the client.",
+                Code      = "catch (NotAuthorizedException ex)",
+                Result    = $"✓ Caught NotAuthorizedException: {ex.Message}",
+                Takeaway  = "Authorization failures surface as typed exceptions — no status-code inspection needed."
+            });
+        }
+        catch (Exception ex) { AppendError("Auth Error", ex); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 9. Correlation ID
+    // ══════════════════════════════════════════════════════════════════════════
+    private async Task RunCorrelationIdAsync(CancellationToken ct)
+    {
+        try
+        {
+            var correlationId = Guid.NewGuid().ToString();
+            var dto = await Mediator.Send(new GetCustomerWithCorrelationRequest
+            {
+                Id = 1,
+                CorrelationId = correlationId
+            }, ct);
+            _log.Append(new LogEntry
+            {
+                Title     = "Correlation ID Header",
+                Feature   = "[FromHeader(\"X-Correlation-Id\")]",
+                Narrative = "The [FromHeader] attribute on CorrelationId causes MetalNexus to send the property " +
+                            "as an HTTP request header rather than a query-string or body parameter.",
+                Code      = $"[FromHeader(\"X-Correlation-Id\")]\npublic string CorrelationId {{ get; set; }} = \"{correlationId}\";",
+                Result    = $"Sent X-Correlation-Id: {correlationId}\nServer echoed back customer [{dto.Id}] {dto.Name}",
+                Takeaway  = "[FromHeader] lets you mix header-based transport with normal request properties cleanly."
+            });
+        }
+        catch (Exception ex) { AppendError("Correlation ID", ex); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 10. Add Note
+    // ══════════════════════════════════════════════════════════════════════════
+    private async Task RunAddNoteAsync(CancellationToken ct)
+    {
+        try
+        {
+            var note = await Mediator.Send(new AddCustomerNoteRequest
+            {
+                CustomerId = 1,
+                Text = $"Testbed note at {DateTime.Now:HH:mm:ss}"
+            }, ct);
+            _log.Append(new LogEntry
+            {
+                Title     = "Add Note (PATCH)",
+                Feature   = "PatchViaBody  •  [Authenticated]",
+                Narrative = "AddCustomerNoteRequest uses HttpProtocol.PatchViaBody, so MetalNexus issues an HTTP PATCH.",
+                Code      = "var note = await Mediator.Send(new AddCustomerNoteRequest { CustomerId = 1, Text = \"...\" });",
+                Result    = $"Note [{note.Id}] created for customer {note.CustomerId}:\n  \"{note.Text}\"",
+                Takeaway  = "MetalNexus supports all standard HTTP verbs — GET, POST, PUT, PATCH, DELETE."
+            });
+        }
+        catch (Exception ex) { AppendError("Add Note", ex); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 11. Webhook
+    // ══════════════════════════════════════════════════════════════════════════
+    private async Task RunWebhookAsync(CancellationToken ct)
+    {
+        try
+        {
+            const string body = "{\"eventType\":\"customer.updated\",\"customerId\":1}";
+            var ack = await Mediator.Send(new CustomerWebhookRequest { RawRequestBody = body }, ct);
+            _log.Append(new LogEntry
+            {
+                Title     = "Webhook (Raw Body)",
+                Feature   = "IMetalNexusRawRequest  •  [Anonymous]",
+                Narrative = "CustomerWebhookRequest implements IMetalNexusRawRequest<T>. The server handler " +
+                            "receives the body verbatim in RawRequestBody for HMAC-style signature verification " +
+                            "before JSON parsing — a common webhook pattern.",
+                Code      = "public class CustomerWebhookRequest : IMetalNexusRawRequest<WebhookAckDto>\n{\n    public string? RawRequestBody { get; set; }\n}",
+                Result    = $"Accepted: {ack.Accepted}  |  {ack.Message}",
+                Takeaway  = "IMetalNexusRawRequest gives handlers the raw bytes before any deserialization — critical for webhook HMAC verification."
+            });
+        }
+        catch (Exception ex) { AppendError("Webhook", ex); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 12. Upload Avatar
+    // ══════════════════════════════════════════════════════════════════════════
+    private async Task RunUploadAvatarAsync(CancellationToken ct)
+    {
+        try
+        {
+            // Minimal 1×1 PNG (67 bytes)
+            var png = Convert.FromBase64String(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==");
+            var req = new UploadCustomerAvatarRequest
+            {
+                CustomerId = 1,
+                Files = [new MetalNexusFile { FileName = "avatar.png", ContentType = "image/png", Data = png }]
+            };
+            var dto = await Mediator.Send(req, ct);
+            _log.Append(new LogEntry
+            {
+                Title     = "Upload Avatar (single file)",
+                Feature   = "MetalNexusFileRequest  •  [UploadLimit]  •  [AllowedFileTypes]  •  [MaxFileSize]",
+                Narrative = "UploadCustomerAvatarRequest extends MetalNexusFileRequest. MetalNexus encodes the file " +
+                            "as multipart/form-data automatically. The [AllowedFileTypes] and [MaxFileSize] attributes " +
+                            "are enforced on the server before the handler runs.",
+                Code      = "req.SetFile(new MetalNexusFile { FileName = \"avatar.png\", ContentType = \"image/png\", Data = png });\nvar dto = await Mediator.Send(req);",
+                Result    = $"Customer [{dto.Id}] avatar updated → {dto.AvatarUrl}",
+                Takeaway  = "File validation attributes ([AllowedFileTypes], [MaxFileSize], [UploadLimit]) run before the handler — no boilerplate guard code needed."
+            });
+        }
+        catch (Exception ex) { AppendError("Upload Avatar", ex); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 13. Upload Documents
+    // ══════════════════════════════════════════════════════════════════════════
+    private async Task RunUploadDocsAsync(CancellationToken ct)
+    {
+        try
+        {
+            var pdf = System.Text.Encoding.ASCII.GetBytes("%PDF-1.4\n%%EOF");
+            var req = new UploadCustomerDocumentsRequest
+            {
+                CustomerId = 1,
+                Files =
+                [
+                    new MetalNexusFile { FileName = "doc1.pdf", ContentType = "application/pdf", Data = pdf },
+                    new MetalNexusFile { FileName = "doc2.pdf", ContentType = "application/pdf", Data = pdf }
+                ]
+            };
+            var dto = await Mediator.Send(req, ct);
+            _createdDocumentId = dto.Documents.LastOrDefault()?.Id ?? 0;
+            _log.Append(new LogEntry
+            {
+                Title     = "Upload Documents (multi-file)",
+                Feature   = "MetalNexusFileRequest  •  [MaxFileCount(5)]  •  [NoUploadLimit]",
+                Narrative = "Multiple files can be sent in one request. [MaxFileCount] caps the number of files. " +
+                            "[NoUploadLimit] removes the default 4 MB total upload cap.",
+                Code      = "req.SetFiles([file1, file2]);\nvar dto = await Mediator.Send(req);",
+                Result    = $"Customer [{dto.Id}] now has {dto.Documents.Count} document(s). Last doc id: {_createdDocumentId}",
+                Takeaway  = "[MaxFileCount] and [NoUploadLimit] are composable — mix and match constraints per endpoint."
+            });
+        }
+        catch (Exception ex) { AppendError("Upload Documents", ex); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 14. Upload Profile Pack (named slots)
+    // ══════════════════════════════════════════════════════════════════════════
+    private async Task RunUploadProfileAsync(CancellationToken ct)
+    {
+        try
+        {
+            var png = Convert.FromBase64String(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==");
+            var pdf = System.Text.Encoding.ASCII.GetBytes("%PDF-1.4\n%%EOF");
+            var req = new UploadProfilePackRequest
+            {
+                CustomerId = 1,
+                Avatar     = new MetalNexusFile { FileName = "profile.png", ContentType = "image/png", Data = png },
+                Document   = new MetalNexusFile { FileName = "pack.pdf",   ContentType = "application/pdf", Data = pdf }
+            };
+            var dto = await Mediator.Send(req, ct);
+            _log.Append(new LogEntry
+            {
+                Title     = "Upload Profile Pack (named slots)",
+                Feature   = "[FileSlot]  •  per-slot [AllowedFileTypes] override",
+                Narrative = "Named [FileSlot] properties let the client address individual files by slot name. " +
+                            "Each slot can override the request-level [AllowedFileTypes] and [MaxFileSize].",
+                Code      = "[FileSlot(\"avatar\")]\npublic MetalNexusFile? Avatar { get; set; }\n\n[FileSlot(\"document\")]\n[AllowedFileTypes(\"application/pdf\")]\npublic MetalNexusFile? Document { get; set; }",
+                Result    = $"Customer [{dto.Id}] profile pack uploaded. Avatar: {dto.AvatarUrl}, Docs: {dto.Documents.Count}",
+                Takeaway  = "[FileSlot] enables strongly-typed named-file uploads — each slot can carry its own validation rules."
+            });
+        }
+        catch (Exception ex) { AppendError("Upload Profile Pack", ex); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 15. Download Document
+    // ══════════════════════════════════════════════════════════════════════════
+    private async Task RunDownloadDocAsync(CancellationToken ct)
+    {
+        var docId = _createdDocumentId > 0 ? _createdDocumentId : 1;
+        try
+        {
+            var file = await Mediator.Send(new DownloadCustomerDocumentRequest { CustomerId = 1, DocumentId = docId }, ct);
+            _log.Append(new LogEntry
+            {
+                Title     = "Download Document",
+                Feature   = "IRequest<MetalNexusFile>  •  IsAttachment = true",
+                Narrative = "The handler returns a MetalNexusFile with IsAttachment = true. " +
+                            "MetalNexus sets Content-Disposition: attachment, triggering a browser download.",
+                Code      = "var file = await Mediator.Send(new DownloadCustomerDocumentRequest { ... });",
+                Result    = $"Received file \"{file.FileName}\"  |  {file.ContentType}  |  {file.Data?.Length ?? 0} bytes",
+                Takeaway  = "Returning MetalNexusFile from a handler produces a proper file-download response with zero extra boilerplate."
+            });
+        }
+        catch (Exception ex) { AppendError("Download Document", ex); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 16. Direct Download Link
+    // ══════════════════════════════════════════════════════════════════════════
+    private Task RunDirectDownloadAsync(CancellationToken ct)
+    {
+        var url = UrlHelper.GetUrlFor(new DownloadCustomerDocumentRequest { CustomerId = 1, DocumentId = 1 });
+        _log.Append(new LogEntry
+        {
+            Title     = "Direct Download Link",
+            Feature   = "IMetalNexusUrlHelper.GetUrlFor  •  no HTTP call",
+            Narrative = "IMetalNexusUrlHelper builds the full URL from the base address and request properties " +
+                        "without making an HTTP call. Ideal for anchor hrefs and window.open() in the browser.",
+            Code      = "var url = UrlHelper.GetUrlFor(new DownloadCustomerDocumentRequest { CustomerId = 1, DocumentId = 1 });\n// → renders as <a href=\"{url}\" download>",
+            Result    = $"URL: {url}",
+            Takeaway  = "IMetalNexusUrlHelper decouples URL construction from dispatch — no HTTP round-trip for link generation."
+        });
+        return Task.CompletedTask;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 17. CSV Export
+    // ══════════════════════════════════════════════════════════════════════════
+    private async Task RunCsvExportAsync(CancellationToken ct)
+    {
+        try
+        {
+            var csv = await Mediator.Send(new ExportCustomersCsvRequest(), ct);
+            var text = csv.Data is not null ? System.Text.Encoding.UTF8.GetString(csv.Data) : "";
+            var lines = text.Split('\n').Where(l => l.Length > 0).ToArray();
+            _log.Append(new LogEntry
+            {
+                Title     = "CSV Export (raw response)",
+                Feature   = "IMetalNexusRawResponse  •  ContentType = text/csv",
+                Narrative = "CustomersCsvResponse implements IMetalNexusRawResponse. MetalNexus sends the raw bytes " +
+                            "with the specified ContentType header, bypassing JSON serialization entirely.",
+                Code      = "public sealed class CustomersCsvResponse : IMetalNexusRawResponse\n{\n    public string ContentType => \"text/csv\";\n    public byte[]? Data { get; init; }\n}",
+                Result    = $"Received {csv.Data?.Length ?? 0} bytes  |  {lines.Length} line(s)\nFirst line: {lines.FirstOrDefault()}",
+                Takeaway  = "IMetalNexusRawResponse lets handlers return any byte stream — CSV, XML, PDF, images — with the correct content type."
+            });
+        }
+        catch (Exception ex) { AppendError("CSV Export", ex); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 18. Content Negotiation
+    // ══════════════════════════════════════════════════════════════════════════
+    private async Task RunContentNegAsync(CancellationToken ct)
+    {
+        try
+        {
+            var result = await Mediator.Send(new ExportCustomersNegotiatedRequest(), ct);
+            var bytes = result.Data ?? (result.DataStream is not null
+                ? await ReadStreamAsync(result.DataStream, ct)
+                : []);
+            _log.Append(new LogEntry
+            {
+                Title     = "Content Negotiation",
+                Feature   = "IMetalNexusRequestContext.AcceptHeader  •  dynamic ContentType",
+                Narrative = "The handler injects IMetalNexusRequestContext and checks AcceptHeader. " +
+                            "It returns CSV or JSON based on what the client requested.",
+                Code      = "if (ctx.AcceptHeader.Contains(\"text/csv\"))\n    return csvResponse;\nreturn jsonResponse;",
+                Result    = $"ContentType: {result.ContentType}  |  {bytes.Length} bytes received",
+                Takeaway  = "IMetalNexusRequestContext exposes inbound headers so handlers can adapt their response format dynamically."
+            });
+        }
+        catch (Exception ex) { AppendError("Content Negotiation", ex); }
+    }
+
+    private static async Task<byte[]> ReadStreamAsync(Stream s, CancellationToken ct)
+    {
+        using var ms = new MemoryStream();
+        await s.CopyToAsync(ms, ct);
+        return ms.ToArray();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 19. Slow Request
+    // ══════════════════════════════════════════════════════════════════════════
+    private async Task RunSlowRequestAsync(CancellationToken ct)
+    {
+        // Normal run (should succeed within 5s timeout)
+        try
+        {
+            var result = await Mediator.Send(new SlowReportRequest { ForceTimeout = false }, ct);
+            _log.Append(new LogEntry
+            {
+                Title     = "Slow Request — success",
+                Feature   = "[HttpClientTimeout(5)]  •  per-request timeout",
+                Narrative = "[HttpClientTimeout(5)] sets a 5-second timeout for this request only, overriding the HttpClient default.",
+                Code      = "[HttpClientTimeout(5)]\npublic class SlowReportRequest : IRequest<SlowReportResponse>",
+                Result    = $"Completed in {result.ElapsedSeconds:F2}s  |  Customers: {result.CustomerCount}",
+                Takeaway  = "[HttpClientTimeout] applies a per-request deadline without touching the shared HttpClient configuration."
+            });
+        }
+        catch (Exception ex) { AppendError("Slow Request (success path)", ex); }
+
+        // Timeout run
+        try
+        {
+            _ = await Mediator.Send(new SlowReportRequest { ForceTimeout = true }, ct);
+            AppendWarning("Slow Request (timeout)", "Expected a timeout exception but the request succeeded.");
+        }
+        catch (TimeoutException)
+        {
+            _log.Append(new LogEntry
+            {
+                Title     = "Slow Request — timeout",
+                Feature   = "[HttpClientTimeout(5)]  •  TimeoutException",
+                Narrative = "When ForceTimeout = true, the server delays beyond the client's 5-second limit. " +
+                            "MetalNexus cancels the request and throws TimeoutException.",
+                Code      = "catch (TimeoutException)  // per-request timeout fired",
+                Result    = "✓ TimeoutException thrown as expected — request timed out after 5 s.",
+                IsWarning = true,
+                Takeaway  = "Per-request timeouts surface as TimeoutException so they can be distinguished from user-initiated cancellation."
+            });
+        }
+        catch (Exception ex) { AppendError("Slow Request (timeout path)", ex); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 20. Deprecated
+    // ══════════════════════════════════════════════════════════════════════════
+#pragma warning disable CS0618
+    private async Task RunDeprecatedAsync(CancellationToken ct)
+    {
+        try
+        {
+            var result = await Mediator.Send(new GetCustomersV1Request(), ct);
+            _log.Append(new LogEntry
+            {
+                Title     = "Deprecated Endpoint",
+                Feature   = "[Obsolete]  •  Swagger deprecated: true",
+                Narrative = "Applying [Obsolete] to a request type causes MetalNexus to mark the generated " +
+                            "Swagger operation as deprecated: true. Callers still get a working response.",
+                Code      = "[Obsolete(\"Use GetCustomersRequest instead.\")]\npublic class GetCustomersV1Request : IRequest<GetCustomersResponse>",
+                Result    = $"Got {result.Customers.Count} customers (deprecated endpoint still works).\nCheck Swagger for deprecated: true on this operation.",
+                IsWarning = true,
+                Takeaway  = "[Obsolete] flows through to OpenAPI — consumers see the deprecation warning in Swagger UI without any extra configuration."
+            });
+        }
+        catch (Exception ex) { AppendError("Deprecated Endpoint", ex); }
+    }
+#pragma warning restore CS0618
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 21. NoContent
+    // ══════════════════════════════════════════════════════════════════════════
+    private async Task RunNoContentAsync(CancellationToken ct)
+    {
+        try
+        {
+            await Mediator.Send(new PurgeAuditLogRequest(), ct);
+            _log.Append(new LogEntry
+            {
+                Title     = "NoContent (204)",
+                Feature   = "IMetalNexusResponseContext.StatusCode = NoContent  •  IRequest (no response)",
+                Narrative = "The handler sets IMetalNexusResponseContext.StatusCode = HttpStatusCode.NoContent. " +
+                            "The client awaits the void command and completes silently — no exception, no return value.",
+                Code      = "await Mediator.Send(new PurgeAuditLogRequest());  // completes silently",
+                Result    = "✓ Command completed — HTTP 204 No Content, no response body.",
+                Takeaway  = "IRequest (without generic) maps to void commands. The client task completes on 2xx including 204."
+            });
+        }
+        catch (Exception ex) { AppendError("NoContent", ex); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 22. MFA / AllowProvisional
+    // ══════════════════════════════════════════════════════════════════════════
+    private async Task RunMfaAsync(CancellationToken ct)
+    {
+        // 1. Get a provisional token
+        string provisionalToken;
+        try
+        {
+            var resp = await Http.PostAsJsonAsync("/auth/token", new
+            {
+                username = "admin",
+                password = "admin",
+                provisional = true
+            }, ct);
+            resp.EnsureSuccessStatusCode();
+            var tr = await resp.Content.ReadFromJsonAsync<TokenResponse>(cancellationToken: ct);
+                provisionalToken = tr?.Token ?? throw new InvalidOperationException("No token returned");
+            }
+            catch (Exception ex)
+            {
+                AppendError("MFA — provisional token fetch", ex);
+                return;
+            }
+
+
+        try
+        {
+            // We set the token directly so the auth handler picks it up
+            var saved = TokenService.Token;
+            var savedUser = TokenService.Username;
+            TokenService.SetToken("admin(provisional)", provisionalToken);
+            MfaConfirmDto result;
+            try { result = await Mediator.Send(new ConfirmMfaRequest { Code = "123456" }, ct); }
+            finally
+            {
+                if (saved is not null) TokenService.SetToken(savedUser, saved);
+                else TokenService.ClearToken();
+            }
+            _log.Append(new LogEntry
+            {
+                Title     = "AllowProvisional Auth (MFA sim)",
+                Feature   = "[Authenticated(AllowProvisional = true)]",
+                Narrative = "A provisional token carries the claim auth_level=provisional. Normally protected " +
+                            "endpoints reject provisional tokens. [Authenticated(AllowProvisional = true)] " +
+                            "opts into accepting them — the typical MFA confirmation step.",
+                Code      = "[Authenticated(AllowProvisional = true)]\npublic class ConfirmMfaRequest : IRequest<MfaConfirmDto>",
+                Result    = $"Success: {result.Success}  |  {result.Message}",
+                Takeaway  = "AllowProvisional = true enables a clean MFA flow without a separate auth scheme."
+            });
+        }
+        catch (Exception ex) { AppendError("MFA — ConfirmMfa call", ex); }
+    }
+
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 24. Advanced Registration
+    // ══════════════════════════════════════════════════════════════════════════
+    private async Task RunAdvRegisterAsync(CancellationToken ct)
+    {
+        try
+        {
+            var result = await Mediator.Send(new LateRegisteredRequest(), ct);
+            _log.Append(new LogEntry
+            {
+                Title     = "Advanced Registration",
+                Feature   = "AddMetalNexusEndpoints — late endpoint registration",
+                Narrative = "LateRegisteredRequest was registered via services.AddMetalNexusEndpoints(typeof(LateRegisteredRequest)) " +
+                            "after the main AddMetalNexusServer call in Program.cs. It resolves and handles correctly.",
+                Code      = "// In Server Program.cs:\nservices.AddMetalNexusEndpoints(typeof(LateRegisteredRequest));",
+                Result    = $"✓ Response: \"{result.Message}\"",
+                Takeaway  = "AddMetalNexusEndpoints lets you register extra request types in modular fashion — useful for plugin architectures."
+            });
+        }
+        catch (Exception ex) { AppendError("Advanced Registration", ex); }
+    }
+
+    // ── helpers ───────────────────────────────────────────────────────────────
+    private void AppendError(string title, Exception ex)
+    {
+        Logger.LogError(ex, "Test function {Title} failed", title);
+        _log.Append(new LogEntry
+        {
+            Title   = title,
+            Result  = $"{ex.GetType().Name}: {ex.Message}",
+            IsError = true
+        });
+    }
+
+    private void AppendWarning(string title, string message) =>
+        _log.Append(new LogEntry { Title = title, Result = message, IsWarning = true });
+
+    private void AppendSkip(string title, string reason) =>
+        _log.Append(new LogEntry { Title = title, Result = $"⏭ Skipped: {reason}", IsWarning = true });
+}

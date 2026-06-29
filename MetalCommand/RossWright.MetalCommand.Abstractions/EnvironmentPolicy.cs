@@ -1,7 +1,7 @@
 namespace RossWright.MetalCommand;
 
 /// <summary>
-/// Controls how <see cref="EnvironmentArgMiddleware"/> behaves when the selected environment
+/// Controls how the MetalCommand environment middleware behaves when the selected environment
 /// is marked as protected (e.g. production).
 /// </summary>
 public enum EnvironmentPolicy

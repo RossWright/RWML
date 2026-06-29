@@ -4,7 +4,7 @@
 	<PropertyGroup>
 		<Title>MetalChain by Ross Wright</Title>
 		<Product>MetalChain</Product>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>Lightweight mediator-style request dispatching for commands, queries, handlers, subscriptions, open generics, multicast fan-out, and dependency injection registration.</Description>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -19,6 +19,14 @@
     <None Include="$(MSBuildThisFileDirectory)CHANGELOG.txt">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)AI-USAGE.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\Docs\api-index\metalchain-api.md">
+      <Pack>True</Pack>
+      <PackagePath>docs\</PackagePath>
     </None>
   </ItemGroup>
   

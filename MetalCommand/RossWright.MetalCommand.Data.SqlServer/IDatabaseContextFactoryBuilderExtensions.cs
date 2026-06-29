@@ -6,7 +6,7 @@ namespace RossWright.MetalCommand.Data;
 
 /// <summary>
 /// Provides access to the underlying <see cref="DbContextOptionsBuilder"/> and
-/// <see cref="SqlServerDbContextOptionsBuilder"/> within an <see cref="AddSqlServer"/> callback.
+/// <see cref="SqlServerDbContextOptionsBuilder"/> within an <c>AddSqlServer</c> callback.
 /// </summary>
 public interface ISqlServerConnectionBuilder
 {
@@ -121,6 +121,11 @@ public static class IDatabaseContextFactoryBuilderExtensions
         builder.AddSqlServer(environment, connectionString, SqlServerOptsBuilder, isDefault, isProtected);
     }
 
+    /// <summary>Registers a configuration-backed SQL Server environment as the default (non-protected).</summary>
+    /// <param name="builder">The factory builder.</param>
+    /// <param name="environment">The environment name.</param>
+    /// <param name="connectionString">The key under <c>ConnectionStrings</c> in configuration.</param>
+    /// <param name="opts">Optional delegate for additional SQL Server/EF options.</param>
     public static void AddSqlServerDefaultByConfigurationName(
         this IDatabaseContextFactoryBuilder builder,
         string environment,
@@ -128,6 +133,11 @@ public static class IDatabaseContextFactoryBuilderExtensions
         Action<ISqlServerConnectionBuilder>? opts = null) =>
         builder.AddSqlServerByConfigurationName(environment, connectionString, opts, isDefault: true, isProtected: false);
 
+    /// <summary>Registers a configuration-backed SQL Server environment as protected (non-default).</summary>
+    /// <param name="builder">The factory builder.</param>
+    /// <param name="environment">The environment name.</param>
+    /// <param name="connectionString">The key under <c>ConnectionStrings</c> in configuration.</param>
+    /// <param name="opts">Optional delegate for additional SQL Server/EF options.</param>
     public static void AddSqlServerProtectedByConfigurationName(
         this IDatabaseContextFactoryBuilder builder,
         string environment,
@@ -135,6 +145,11 @@ public static class IDatabaseContextFactoryBuilderExtensions
         Action<ISqlServerConnectionBuilder>? opts = null) =>
         builder.AddSqlServerByConfigurationName(environment, connectionString, opts, isDefault: false, isProtected: true);
 
+    /// <summary>Registers a configuration-backed SQL Server environment as both default and protected.</summary>
+    /// <param name="builder">The factory builder.</param>
+    /// <param name="environment">The environment name.</param>
+    /// <param name="connectionString">The key under <c>ConnectionStrings</c> in configuration.</param>
+    /// <param name="opts">Optional delegate for additional SQL Server/EF options.</param>
     public static void AddSqlServerDefaultProtectedByConfigurationName(
         this IDatabaseContextFactoryBuilder builder,
         string environment,

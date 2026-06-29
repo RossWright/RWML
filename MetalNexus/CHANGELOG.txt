@@ -1,0 +1,4 @@
+[2026.2.0] - TBD
+- Initial public release of MetalNexus.
+
+** Prior versions released of this library were private and not intended for public use. Use version 2026.2.0 or later.**

@@ -165,8 +165,8 @@ class BasicTypeCasedProp
 // for HasChangedFrom: type with a public field
 class BasicTypeOnePublicField
 {
-    public int Value;
-    public string? Name;
+    public int Value = default;
+    public string? Name = default;
 }
 
 // for positional record: target with nullable ctor param

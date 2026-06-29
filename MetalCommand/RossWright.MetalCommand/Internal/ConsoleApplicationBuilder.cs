@@ -1,11 +1,15 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using RossWright.MetalCommand.Internal;
 using RossWright.MetalCommand.Internal.Commands;
 using System.ComponentModel;
 
 namespace RossWright.MetalCommand;
 
+/// <summary>
+/// Default implementation of <see cref="IConsoleApplicationBuilder"/>.
+/// </summary>
 [EditorBrowsable(EditorBrowsableState.Never)]
 public class ConsoleApplicationBuilder : OptionsBuilder, IConsoleApplicationBuilder
 {
@@ -17,6 +21,8 @@ public class ConsoleApplicationBuilder : OptionsBuilder, IConsoleApplicationBuil
         _configuration = configuration;
         _console = console;
         _services = services;
+        _services.AddLogging();
+        _loggingBuilder = new LoggingBuilder(_services);
     }
     private readonly IConfiguration _configuration;
     private readonly Console _console;
@@ -28,16 +34,23 @@ public class ConsoleApplicationBuilder : OptionsBuilder, IConsoleApplicationBuil
     private ConsoleColor? _warningColor;
     private readonly List<Type> _middlewareTypes = new();
 
+    /// <inheritdoc />
     public IConfiguration Configuration => _configuration;
+    /// <inheritdoc />
     public IServiceCollection Services => _services;
+    /// <inheritdoc />
     public IConsole Console => _console;
+    /// <inheritdoc />
     public ICommandCollection Commands => _commandCollectionBuilder;
+    /// <inheritdoc />
     public Func<IDictionary<string, string>, string>? PromptFactory { get; set; }
+    /// <inheritdoc />
     public IConsoleApplicationBuilder SetTabWidth(int width)
     {
         _console.TabWidth = width;
         return this;
     }
+    /// <inheritdoc />
     public IConsoleApplicationBuilder SetColors(
         ConsoleColor? introOutroColor = null,
         ConsoleColor? helpColor = null,
@@ -52,12 +65,14 @@ public class ConsoleApplicationBuilder : OptionsBuilder, IConsoleApplicationBuil
         if (errorBgColor != null) _console.ErrorBackgroundColor = errorBgColor.Value;
         return this;
     }
+    /// <inheritdoc />
     public IConsoleApplicationBuilder AddMiddleware<TMiddleware>() where TMiddleware : class, ICommandMiddleware
     {
         _middlewareTypes.Add(typeof(TMiddleware));
         return this;
     }
 
+    /// <inheritdoc />
     public void SetServiceProviderFactory(IServiceProviderFactory<IServiceCollection> serviceProviderFactory) =>
         _serviceProviderFactory = serviceProviderFactory;
     private IServiceProviderFactory<IServiceCollection>? _serviceProviderFactory;
@@ -66,6 +81,14 @@ public class ConsoleApplicationBuilder : OptionsBuilder, IConsoleApplicationBuil
     internal string? LoadContextName { get; set; }
     internal bool ShowWarnIfContextMissing { get; set; } = true;
 
+    /// <inheritdoc />
+    public ILoggingBuilder Logging => _loggingBuilder;
+    private readonly ILoggingBuilder _loggingBuilder;
+
+    /// <summary>
+    /// Builds the configured console application.
+    /// </summary>
+    /// <returns>The configured <see cref="ConsoleApplication"/>.</returns>
     public ConsoleApplication Build()
     {
         // Register built-in commands
@@ -150,4 +173,7 @@ public class ConsoleApplicationBuilder : OptionsBuilder, IConsoleApplicationBuil
     }
 }
 
-
+file sealed class LoggingBuilder(IServiceCollection services) : ILoggingBuilder
+{
+    public IServiceCollection Services { get; } = services;
+}

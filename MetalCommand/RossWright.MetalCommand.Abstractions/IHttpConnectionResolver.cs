@@ -3,7 +3,7 @@ using System.Net.Http;
 namespace RossWright.MetalCommand;
 
 /// <summary>
-/// Resolves the <see cref="System.Net.Http.IHttpClientFactory"/> key for a given environment
+/// Resolves the <c>IHttpClientFactory</c> key for a given environment
 /// and optional connection group, and provides a convenience method to obtain an
 /// <see cref="HttpClient"/> directly.
 /// </summary>
@@ -26,7 +26,7 @@ namespace RossWright.MetalCommand;
 public interface IHttpConnectionResolver
 {
     /// <summary>
-    /// Returns the <see cref="System.Net.Http.IHttpClientFactory"/> key for the given
+    /// Returns the <c>IHttpClientFactory</c> key for the given
     /// environment and optional base connection name.
     /// </summary>
     /// <remarks>
@@ -55,7 +55,7 @@ public interface IHttpConnectionResolver
     /// Pass <see langword="null"/> or omit to use the default (unnamed) group.
     /// </param>
     /// <returns>
-    /// The fully-qualified <see cref="System.Net.Http.IHttpClientFactory"/> key, e.g.
+    /// The fully-qualified <c>IHttpClientFactory</c> key, e.g.
     /// <c>"MetalCommand:prod"</c> or <c>"MetalCommand:payments:prod"</c>.
     /// </returns>
     /// <exception cref="InvalidOperationException">

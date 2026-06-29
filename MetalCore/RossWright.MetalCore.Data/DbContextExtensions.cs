@@ -123,37 +123,37 @@ public static class DbContextExtensions
     }
 
     /// <summary>
-    /// Drops all foreign key constraints, tables, and stored procedures from the database.
-    /// <para><strong>SQL Server only. Intended for test teardown — do not call in production.</strong></para>
+    /// Drops SQL Server foreign key constraints, tables, and stored procedures from the database.
+    /// <para><strong>Intended for local tooling only — do not call in production.</strong></para>
     /// </summary>
-    /// <param name="dbCtx">The database context targeting the database to destroy.</param>
-    /// <returns>A <see cref="Task"/> that completes when all objects have been removed.</returns>
-    public static async Task Obliterate(this DbContext dbCtx) => await dbCtx.Database.ExecuteSqlRawAsync(
-        "DECLARE @sql NVARCHAR(2000)" +
-        "WHILE(EXISTS(SELECT 1 from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_TYPE = 'FOREIGN KEY'))\n" +
-        "BEGIN\n" +
-        "    SELECT TOP 1 @sql = ('ALTER TABLE [' + TABLE_SCHEMA + '].[' + TABLE_NAME + '] DROP CONSTRAINT [' + CONSTRAINT_NAME + ']')\n" +
-        "    FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS\n" +
-        "    WHERE CONSTRAINT_TYPE = 'FOREIGN KEY'\n" +
-        "    EXEC(@sql)\n" +
-        "    PRINT @sql\n" +
-        "END\n" +
-        "WHILE(EXISTS(SELECT * from INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME NOT IN ('database_firewall_rules', 'ipv6_database_firewall_rules')))\n" +
-        "BEGIN\n" +
-        "    SELECT TOP 1 @sql = ('DROP TABLE [' + TABLE_SCHEMA + '].[' + TABLE_NAME + ']')\n" +
-        "    FROM INFORMATION_SCHEMA.TABLES\n" +
-        "    WHERE TABLE_NAME NOT IN ('database_firewall_rules', 'ipv6_database_firewall_rules')\n" +
-        "    EXEC(@sql)\n" +
-        "    PRINT @sql\n" +
-        "END\n" +
-        "WHILE EXISTS (SELECT * FROM sys.objects WHERE type = 'P')\n" +
-        "BEGIN\n" +
-        "    SELECT TOP 1 @sql = 'DROP PROCEDURE [' + SCHEMA_NAME(schema_id) + '].[' + name + ']'\n" +
-        "    FROM sys.objects\n" +
-        "    WHERE type = 'P';\n" +
-        "    EXEC(@sql);\n" +
-        "    PRINT @sql;" +
-        "\nEND");
+    /// <param name="dbCtx">The database context targeting the SQL Server database to destroy.</param>
+    /// <returns>A <see cref="Task"/> that completes when the database objects have been removed.</returns>
+    public static async Task Obliterate(this DbContext dbCtx)
+        => await dbCtx.Database.ExecuteSqlRawAsync("DECLARE @sql NVARCHAR(2000)" +
+            "WHILE(EXISTS(SELECT 1 from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_TYPE = 'FOREIGN KEY'))\n" +
+            "BEGIN\n" +
+            "    SELECT TOP 1 @sql = ('ALTER TABLE [' + TABLE_SCHEMA + '].[' + TABLE_NAME + '] DROP CONSTRAINT [' + CONSTRAINT_NAME + ']')\n" +
+            "    FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS\n" +
+            "    WHERE CONSTRAINT_TYPE = 'FOREIGN KEY'\n" +
+            "    EXEC(@sql)\n" +
+            "    PRINT @sql\n" +
+            "END\n" +
+            "WHILE(EXISTS(SELECT * from INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME NOT IN ('database_firewall_rules', 'ipv6_database_firewall_rules')))\n" +
+            "BEGIN\n" +
+            "    SELECT TOP 1 @sql = ('DROP TABLE [' + TABLE_SCHEMA + '].[' + TABLE_NAME + ']')\n" +
+            "    FROM INFORMATION_SCHEMA.TABLES\n" +
+            "    WHERE TABLE_NAME NOT IN ('database_firewall_rules', 'ipv6_database_firewall_rules')\n" +
+            "    EXEC(@sql)\n" +
+            "    PRINT @sql\n" +
+            "END\n" +
+            "WHILE EXISTS (SELECT * FROM sys.objects WHERE type = 'P')\n" +
+            "BEGIN\n" +
+            "    SELECT TOP 1 @sql = 'DROP PROCEDURE [' + SCHEMA_NAME(schema_id) + '].[' + name + ']'\n" +
+            "    FROM sys.objects\n" +
+            "    WHERE type = 'P';\n" +
+            "    EXEC(@sql);\n" +
+            "    PRINT @sql;" +
+            "\nEND");
 }
 
 /// <summary>

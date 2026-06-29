@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Title>MetalCore by Ross Wright</Title>
     <Product>MetalCore</Product>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>Foundational .NET extension methods, validation helpers, mapping utilities, bootstrap logging, signing, messaging contracts, Blazor helpers, server helpers, data utilities, and shared infrastructure for the Metal libraries.</Description>
   </PropertyGroup>
   
   <PropertyGroup>
@@ -19,6 +19,14 @@
     <None Include="$(MSBuildThisFileDirectory)CHANGELOG.txt">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)AI-USAGE.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\Docs\api-index\metalcore-api.md">
+      <Pack>True</Pack>
+      <PackagePath>docs\</PackagePath>
     </None>
   </ItemGroup>
   

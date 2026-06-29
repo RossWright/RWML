@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using RossWright.MetalCommand.Internal;
 using RossWright.MetalCommand.Internal.Commands;
 using RossWright.MetalCommand.Tests.Infrastructure;
@@ -63,5 +64,17 @@ public class ConsoleApplicationBuilderTests : IDisposable
 
         // The original default invocation must not resolve
         console.ErrorLines.ShouldContain(l => l.Contains("savectx") || l.Contains("No command"));
+    }
+
+    [Fact]
+    public void Logging_Property_ReturnsLoggingBuilderThatCanRegisterProvider()
+    {
+        var builder = ConsoleApplication.CreateBuilder();
+
+        builder.Logging.AddConsole();
+        var app = builder.Build();
+
+        var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
+        loggerFactory.ShouldNotBeNull();
     }
 }

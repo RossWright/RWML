@@ -5,8 +5,8 @@ namespace RossWright.MetalCommand;
 
 /// <summary>
 /// Middleware that enforces <see cref="EnvironmentPolicy"/> for properties decorated
-/// with <see cref="EnvironmentArgAttribute"/>. Run after argument binding; calls
-/// <paramref name="next"/> only when all policy checks pass.
+/// with <see cref="EnvironmentArgAttribute"/>. Run after argument binding; invokes the
+/// next pipeline step only when all policy checks pass.
 /// </summary>
 /// <remarks>
 /// Confirmation for <see cref="EnvironmentPolicy.Dangerous"/> is scoped to a single
@@ -18,6 +18,7 @@ namespace RossWright.MetalCommand;
 /// </remarks>
 public sealed class EnvironmentArgMiddleware(IServiceProvider services) : ICommandMiddleware
 {
+    /// <inheritdoc />
     public async Task InvokeAsync(CommandContext context, Func<CommandContext, Task> next)
     {
         var optionsRegistries = services.GetServices<ICommandOptionsRegistry>().ToList();

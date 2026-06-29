@@ -7,8 +7,8 @@ namespace RossWright.MetalCommand;
 /// <remarks>
 /// <para>
 /// Middleware is executed in registration order (i.e. the first registered middleware
-/// is the outermost wrapper). Call <paramref name="next"/> to pass control to the next
-/// middleware in the chain; the innermost step calls
+/// is the outermost wrapper). Each middleware receives a delegate named <c>next</c>;
+/// invoking it passes control to the next middleware in the chain. The innermost step calls
 /// <see cref="ICommand.ExecuteAsync"/> and sets <see cref="CommandContext.Result"/>.
 /// </para>
 /// <para>

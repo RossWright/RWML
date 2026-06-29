@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Reflection;
 
@@ -86,6 +87,17 @@ internal sealed class MetalInjectionServiceProvider :
     }
     private bool isDisposingRoot = false;
 
+    private ILogger? _logger;
+    private bool _loggerResolved;
+    private ILogger? GetLogger()
+    {
+        if (_loggerResolved) return _logger;
+        _loggerResolved = true;
+        _logger = (this.GetService<ILoggerFactory>())
+                      ?.CreateLogger("MetalInjection");
+        return _logger;
+    }
+
     public async ValueTask DisposeAsync()
     {
         foreach (var disposable in _disposableTransientInstances)
@@ -168,11 +180,9 @@ internal sealed class MetalInjectionServiceProvider :
             serviceType = serviceType.GetGenericArguments()[0];
         }
 
-        var log = isCheck ? null : _options.LoadLog;
+        var logger = isCheck ? null : GetLogger();
 
-
-        log?.LogTrace($"{(isCheck ? "IsService" : "GetService")}({serviceType})");
-        using var indent = log?.BeginScope(); 
+        using var indent = logger?.BeginScope($"{(isCheck ? "IsService" : "GetService")}({serviceType})"); 
         if (serviceType == typeof(IKeyedServiceProvider) ||
             serviceType == typeof(IServiceProvider) ||
             serviceType == typeof(ISupportRequiredService) ||
@@ -191,7 +201,7 @@ internal sealed class MetalInjectionServiceProvider :
             {
                 result = this;
             }
-            log?.LogTrace("Resolved as ServiceProvider itself");            
+            logger?.LogTrace("Resolved as ServiceProvider itself");            
             return true;
         }
 
@@ -270,7 +280,7 @@ internal sealed class MetalInjectionServiceProvider :
                     }
                     else if (candidateGroups.Count > 1)
                     {
-                        log?.LogError($"Multiple covariant matches found for {displayName}");
+                        logger?.LogError($"Multiple covariant matches found for {displayName}");
                         result = null;
                         return false;
                     }
@@ -309,9 +319,9 @@ internal sealed class MetalInjectionServiceProvider :
                 {
                     result = isServiceList ? Array.CreateInstance(serviceType, 0) : null;
                     if (isCheck)
-                        log?.LogTrace($"No applicable service descriptor found for {displayName}");
+                        logger?.LogTrace($"No applicable service descriptor found for {displayName}");
                     else
-                        log?.Log(LogLevel.Warning, $"No applicable service descriptor found for {displayName}");
+                        logger?.LogWarning($"No applicable service descriptor found for {displayName}");
                     return false;
                 }
             }
@@ -334,7 +344,7 @@ internal sealed class MetalInjectionServiceProvider :
                     {
                         var msg = $"Found a service for {displayName}, but its lifetime is scoped and the service provider is " +
                             $"not scoped. Use IServiceProvider.CreateScope to get a service provider scope to inject this service.";
-                        log?.LogError(msg);
+                        logger?.LogError(msg);
                         if (!isCheck) throw new MetalInjectionException(msg);
                         result = null;
                         return false;
@@ -356,7 +366,7 @@ internal sealed class MetalInjectionServiceProvider :
             else
             {
                 var msg = $"Found multiple services for {displayName}. Use GetServices to inject multiple service implementations.";
-                log?.LogError(msg);
+                logger?.LogError(msg);
                 if (!isCheck) throw new MetalInjectionException(msg);
                 result = null;
                 return false;
@@ -381,7 +391,7 @@ internal sealed class MetalInjectionServiceProvider :
                     serviceDescriptor.Lifetime == ServiceLifetime.Scoped &&
                     _scopeInstances?.TryGetValue(key, out serviceImpl) == true))
             {
-                log?.LogTrace($"{displayName} - Found {serviceDescriptor.Lifetime} previous instance");
+                logger?.LogTrace($"{displayName} - Found {serviceDescriptor.Lifetime} previous instance");
                 serviceImpls.Add(serviceImpl!);
             }
             else
@@ -397,7 +407,7 @@ internal sealed class MetalInjectionServiceProvider :
                     serviceImpl = serviceDescriptor.IsKeyedService
                         ? serviceDescriptor.KeyedImplementationInstance
                         : serviceDescriptor.ImplementationInstance;
-                    log?.LogTrace($"{displayName} - Found {serviceDescriptor.Lifetime} implementation instance: {implementationType.Name} {serviceImpl!.GetHashCode()}");
+                    logger?.LogTrace($"{displayName} - Found {serviceDescriptor.Lifetime} implementation instance: {implementationType.Name} {serviceImpl!.GetHashCode()}");
                 }
                 else if (serviceDescriptor.ImplementationFactory != null ||
                          (serviceDescriptor.IsKeyedService && serviceDescriptor.KeyedImplementationFactory != null))
@@ -405,17 +415,17 @@ internal sealed class MetalInjectionServiceProvider :
                     implementationType = serviceDescriptor.IsKeyedService
                         ? serviceDescriptor.KeyedImplementationFactory!.Method.ReturnType
                         : serviceDescriptor.ImplementationFactory!.Method.ReturnType;
-                    log?.LogTrace($"{displayName} - Found {serviceDescriptor.Lifetime} implementation factory");
+                    logger?.LogTrace($"{displayName} - Found {serviceDescriptor.Lifetime} implementation factory");
                     try
                     {
                         serviceImpl = serviceDescriptor.IsKeyedService
                             ? serviceDescriptor.KeyedImplementationFactory!(this, serviceKey)
                             : serviceDescriptor.ImplementationFactory!(this);
-                        log?.LogTrace($"{displayName} - Implementation Factory produced an object of type {serviceImpl?.GetType().Name}");
+                        logger?.LogTrace($"{displayName} - Implementation Factory produced an object of type {serviceImpl?.GetType().Name}");
                     }
                     catch (Exception ex)
                     {
-                        log?.LogError($"{displayName} - Implementation factory threw exception: {ex.ToBetterString()}");
+                        logger?.LogError($"{displayName} - Implementation factory threw exception: {ex.ToBetterString()}");
                         throw;
                     }
                 }
@@ -430,7 +440,7 @@ internal sealed class MetalInjectionServiceProvider :
                         implementationType = implementationType.MakeGenericType(genericParamTypes);
                     }
                      
-                    log?.LogTrace($"{displayName} - Found {serviceDescriptor.Lifetime} Implementation Type {implementationType.Name}");
+                    logger?.LogTrace($"{displayName} - Found {serviceDescriptor.Lifetime} Implementation Type {implementationType.Name}");
 
                     var constructors = implementationType.GetConstructors().OrderByDescending(_ => _.GetParameters().Length).ToArray();
                     var setConstructor = constructors.FirstOrDefault(_ => _.GetCustomAttribute<ActivatorUtilitiesConstructorAttribute>() != null);
@@ -439,11 +449,11 @@ internal sealed class MetalInjectionServiceProvider :
                     foreach (var constructor in constructors)
                     {
                         var parameters = constructor.GetParameters();
-                        log?.LogTrace($"{displayName} - Found {implementationType.Name} Constructor with {parameters.Length} parameters");
+                        logger?.LogTrace($"{displayName} - Found {implementationType.Name} Constructor with {parameters.Length} parameters");
 
                         if (parameters.Any(_ => _.ParameterType.IsSimpleType() && !_.HasDefaultValue))
                         {
-                            log?.LogTrace($"{displayName} - Found {implementationType.Name} Constructor with {parameters.Length} " +
+                            logger?.LogTrace($"{displayName} - Found {implementationType.Name} Constructor with {parameters.Length} " +
                                 $"parameters has required simple parameters - trying a different constructor if available...");
                             continue;
                         }
@@ -455,14 +465,14 @@ internal sealed class MetalInjectionServiceProvider :
                             var parameterServiceKey = parameter.GetCustomAttribute<FromKeyedServicesAttribute>()?.Key
                                 ?? parameterInjectAttr?.Key;
 
-                            log?.LogTrace($"{displayName} - getting {implementationType.Name} ctor parameter {parameter.Name} of type " +
+                            logger?.LogTrace($"{displayName} - getting {implementationType.Name} ctor parameter {parameter.Name} of type " +
                                 $"{parameter.ParameterType.Name}{parameterServiceKey.ToStringIfPresent(_ => $" with key {_}")}");
                             if (serviceDescriptor.Lifetime == ServiceLifetime.Singleton &&
                                 GetRegisteredLifetime(parameter.ParameterType, parameterServiceKey) == ServiceLifetime.Scoped)
                             {
                                 var captiveMsg = $"Cannot inject scoped service {parameter.ParameterType.Name} into singleton " +
                                     $"{implementationType.Name}. Scoped services cannot be captured by singletons.";
-                                log?.LogError(captiveMsg);
+                                logger?.LogError(captiveMsg);
                                 if (!isCheck) throw new MetalInjectionException(captiveMsg);
                                 break;
                             }
@@ -473,14 +483,14 @@ internal sealed class MetalInjectionServiceProvider :
                                     ?? (parameter.HasDefaultValue || new NullabilityInfoContext().Create(parameter).WriteState is NullabilityState.Nullable);
                                 if (!isOptional)
                                 {
-                                    log?.LogTrace($"{displayName} - error while contructing {implementationType.Name} contructor parameter {parameter.Name} - " +
+                                    logger?.LogTrace($"{displayName} - error while contructing {implementationType.Name} contructor parameter {parameter.Name} - " +
                                         $"ctor parameter {parameter.Name} Service Not Found and has no default value");
                                     break;
                                 }
                             }
                             if (false == argument?.GetType().IsAssignableTo(parameter.ParameterType))
                             {
-                                log?.LogTrace($"{displayName} - error while contructing {implementationType.Name} - " +
+                                logger?.LogTrace($"{displayName} - error while contructing {implementationType.Name} - " +
                                     $"found service of type {argument.GetType().Name} that cannot be assigned to parameter {parameter.Name} of type {parameter.ParameterType.Name}");
                                 break;
                             }
@@ -489,27 +499,27 @@ internal sealed class MetalInjectionServiceProvider :
                         }
                         if (arguments.Count == parameters.Length)
                         {
-                            log?.LogTrace($"{displayName} - Creating instance of {implementationType}");
+                            logger?.LogTrace($"{displayName} - Creating instance of {implementationType}");
                             try
                             {
                                 serviceImpl = constructor.Invoke(arguments.ToArray());
-                                log?.LogTrace($"{displayName} - Created instance of {implementationType}");
+                                logger?.LogTrace($"{displayName} - Created instance of {implementationType}");
                             }
                             catch (Exception ex)
                             {
-                                log?.LogTrace($"{displayName} - Creating instance of {implementationType} threw exception {ex.ToBetterString()}");
+                                logger?.LogTrace($"{displayName} - Creating instance of {implementationType} threw exception {ex.ToBetterString()}");
                             }
                             break;
                         }
                         else
                         {
-                            log?.LogTrace($"{displayName} - {implementationType.Name} - failed to find ctor parameters");
+                            logger?.LogTrace($"{displayName} - {implementationType.Name} - failed to find ctor parameters");
                         }
                     }
 
                     if (serviceImpl == null)
                     {
-                        log?.LogError($"{displayName} - Failed to instantiate {implementationType.FullName}");
+                        logger?.LogError($"{displayName} - Failed to instantiate {implementationType.FullName}");
                     }
                 }
                 else
@@ -519,7 +529,7 @@ internal sealed class MetalInjectionServiceProvider :
 
                 if (serviceImpl != null)
                 {
-                    InjectProperties(log, serviceImpl);
+                    InjectProperties(logger, serviceImpl);
 
                     serviceImpls.Add(serviceImpl);
 
@@ -547,7 +557,7 @@ internal sealed class MetalInjectionServiceProvider :
                 else
                 {
                     var msg = $"Failed to get instance of registered service {implementationType} for {displayName}";
-                    log?.LogError($"{displayName} - {msg}");
+                    logger?.LogError($"{displayName} - {msg}");
                     if (!isCheck) throw new MetalInjectionException(msg);
                 }
             }
@@ -558,13 +568,13 @@ internal sealed class MetalInjectionServiceProvider :
             var array = Array.CreateInstance(serviceType, serviceImpls.Count);
             Array.Copy(serviceImpls.ToArray(), array, serviceImpls.Count);
             result = array;
-            log?.LogTrace($"{displayName} - Resolved to service list with " +
+            logger?.LogTrace($"{displayName} - Resolved to service list with " +
                 string.Join(", ", serviceImpls.ToArray().Select(_ => _.GetType().FullName)));
         }
         else
         {
             result = serviceImpls.FirstOrDefault();            
-            log?.LogTrace($"{displayName} - {(result != null
+            logger?.LogTrace($"{displayName} - {(result != null
                     ? $"Resolved to {result?.GetType().FullName}"
                     : "Could not resolve")}");
         }
@@ -572,7 +582,7 @@ internal sealed class MetalInjectionServiceProvider :
         return serviceImpls.Count > 0;
     }
 
-    private void InjectProperties(ILoadLog? log, object? serviceImpl)
+    private void InjectProperties(ILogger? logger, object? serviceImpl)
     {
         if (serviceImpl == null) return;
         Type serviceImplType = serviceImpl.GetType();
@@ -588,7 +598,7 @@ internal sealed class MetalInjectionServiceProvider :
              .ToArray());
         foreach (var injectProperty in injectProperties)
         {
-            log?.LogTrace($"{serviceImpl} - Inject Property {injectProperty.PropertyType.Name} found");
+            logger?.LogTrace($"{serviceImpl} - Inject Property {injectProperty.PropertyType.Name} found");
             if (!injectProperty.CanWrite)
             {
                 throw new InvalidOperationException($"Cannot write to inject property {injectProperty.Name} " +
@@ -626,7 +636,7 @@ internal sealed class MetalInjectionServiceProvider :
         }
     }
 
-    public void InjectProperties(object? serviceImpl)=> InjectProperties(_options.LoadLog, serviceImpl);
+    public void InjectProperties(object? serviceImpl) => InjectProperties(GetLogger(), serviceImpl);
 
     private ServiceLifetime? GetRegisteredLifetime(Type serviceType, object? serviceKey)
     {

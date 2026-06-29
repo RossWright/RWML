@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using RossWright.MetalInjection;
 using System.Collections.Concurrent;
 namespace RossWright.MetalChain;
@@ -14,13 +15,11 @@ internal interface IMetalChainRegistry
     Task<object?> Handle(IServiceProvider serviceProvider, object request, CancellationToken cancellationToken);
 }
 
-internal class MetalChainRegistry : IMetalChainRegistry
+internal class MetalChainRegistry(ILogger? _bootstraplogger = null) : IMetalChainRegistry
 {
     internal readonly ConcurrentDictionaryOfLists<Type, Type> _commandHandlers = new();
     internal readonly ConcurrentDictionary<Type, Type> _queryHandlers = new();
     internal readonly ConcurrentDictionaryOfLists<Type, Func<object, CancellationToken, Task>> _listeners = new();
-
-    public ILoadLog? LoadLog { get; internal set; }
 
     internal bool AllowUnhandledQueries { get; set; }
     internal bool AllowUnhandledCommands { get; set; }
@@ -42,7 +41,7 @@ internal class MetalChainRegistry : IMetalChainRegistry
                     interfaceType.GetGenericTypeDefinition() == typeof(IRequestHandler<,>)) &&
                     !interfaces.Any(_ => _ != interfaceType && _.IsAssignableTo(interfaceType))))
             {
-                LoadLog?.LogTrace($"Found Request Handler: {handlerType} implements {handlerInterface}");
+                _bootstraplogger?.LogTrace($"Found Request Handler: {handlerType} implements {handlerInterface}");
                 var handlerParams = handlerInterface.GetGenericArguments();
                 var requestType = handlerParams[0];
                 var responseType = handlerParams.Length > 1 ? handlerParams[1] : null;
@@ -70,9 +69,13 @@ internal class MetalChainRegistry : IMetalChainRegistry
                 }
                 else
                 {
-                    // Duplicate query handler is always forbidden — nondeterministic dispatch
-                    if (_queryHandlers.ContainsKey(requestType))
+                    // Same handler type is always a silent skip (idempotent registration)
+                    if (_queryHandlers.TryGetValue(requestType, out var existingQueryHandler))
                     {
+                        if (existingQueryHandler == handlerType)
+                            continue;
+
+                        // Different handler type: duplicate query handlers are forbidden — nondeterministic dispatch
                         throw new MetalChainException(
                             $"A handler for query '{requestType.Name}' is already registered. " +
                             $"Multiple query handlers for the same type are not permitted. " +

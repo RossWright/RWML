@@ -278,4 +278,75 @@ public class MetalChainRegistryTests
             }
         }
     }
+
+    // ── Idempotent re-registration (same handler type added twice) ────────────
+    // These cover the scenario where MetalNexus calls AddMetalChain (full scan)
+    // and then AddMetalChainHandlers per-type (per-endpoint registration), causing
+    // the same handler type to be fed into AddHandlers twice.
+
+    [Fact]
+    public void SameQueryHandler_RegisteredTwice_IsIdempotent()
+    {
+        MetalChainRegistry registry = new();
+        registry.AddHandlers(typeof(BasicQuery.Handler));
+
+        // Second registration of the exact same handler type must not throw
+        registry.AddHandlers(typeof(BasicQuery.Handler));
+
+        registry._queryHandlers.Count.ShouldBe(1);
+        registry._queryHandlers[typeof(BasicQuery.Request)].ShouldBe(typeof(BasicQuery.Handler));
+    }
+
+    [Fact]
+    public void SameCommandHandler_RegisteredTwice_IsIdempotent()
+    {
+        MetalChainRegistry registry = new();
+        registry.AddHandlers(typeof(BasicCommand.Handler));
+
+        // Second registration of the exact same handler type must not throw
+        registry.AddHandlers(typeof(BasicCommand.Handler));
+
+        registry._commandHandlers.GetValuesOrEmptySet(typeof(BasicCommand.Request))
+            .ShouldHaveSingleItem();
+    }
+
+    [Fact]
+    public void WholeAssemblyScannedTwice_IsIdempotent()
+    {
+        // Simulates AddMetalChain (scans all types) followed by a second identical
+        // scan — both query and command handlers must survive without throwing.
+        var handlers = new[]
+        {
+            typeof(BasicCommand.Handler),
+            typeof(BasicQuery.Handler),
+        };
+
+        MetalChainRegistry registry = new();
+        registry.AddHandlers(handlers);
+        registry.AddHandlers(handlers); // second pass — must be a no-op
+
+        registry._commandHandlers.GetValuesOrEmptySet(typeof(BasicCommand.Request))
+            .ShouldHaveSingleItem();
+        registry._queryHandlers.Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public void DifferentQueryHandlerForSameRequest_ThrowsMetalChainException()
+    {
+        MetalChainRegistry registry = new();
+        registry.AddHandlers(typeof(BasicQuery.Handler));
+
+        Should.Throw<MetalChainException>(() =>
+            registry.AddHandlers(typeof(DuplicateBasicQueryHandler)));
+    }
+
+    [Fact]
+    public void DifferentCommandHandlerForSameRequest_WithoutAllowMultiple_ThrowsMetalChainException()
+    {
+        MetalChainRegistry registry = new();
+        registry.AddHandlers(typeof(BasicCommand.Handler));
+
+        Should.Throw<MetalChainException>(() =>
+            registry.AddHandlers(typeof(DuplicateBasicCommandHandler)));
+    }
 }

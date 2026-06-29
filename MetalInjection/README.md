@@ -1,9 +1,13 @@
-﻿# Ross Wright's Metal Injection Library
+﻿# Ross Wright's MetalInjection Library
 Copyright (c) 2023-2026 Pross Co.
 
 ## Table of Contents
-- [Introduction](#introduction)
+- [Overview](#overview)
+- [Packages](#packages)
+- [Namespaces](#namespaces)
+- [Common APIs](#common-apis)
 - [Installation](#installation)
+- [Quick Start](#quick-start)
 - [Registration](#registration)
 - [Injection](#injection)
 - [Activation](#activation)
@@ -19,270 +23,355 @@ Copyright (c) 2023-2026 Pross Co.
   - [[AllowRootResolution]](#allowrootresolution)
   - [Covariant Generic Resolution](#covariant-generic-resolution)
   - [Open-Generic Factory Registration](#open-generic-factory-registration)
+  - [Bootstrap Logging](#bootstrap-logging)
+- [See Also](#see-also)
 - [License](#license)
+- [Changelog](CHANGELOG.txt)
 
-## Introduction
-MetalInjection is a dependency inversion library for building and using a service provider. It supports:
-* registering services via reflection via an attribute or interface inheritance on the implementation
-* keyed services (as the current default .NET ServiceProviders do)
-* property injection via Inject attributes.
-* open generic service registration, including open-generic factory delegates
-* binding and registration of configuration sections for injection via attribute.
-* deterministic disposal of `IDisposable` and `IAsyncDisposable` services across all lifetimes and scope boundaries.
+## Overview
+
+MetalInjection replaces manual `services.AddSingleton/Scoped/Transient` calls with attribute-driven registration — just decorate your class and MetalInjection discovers it automatically during an assembly scan. On top of that it adds property injection for any environment (not just Blazor), `appsettings.json` configuration binding and registration in one step, and deterministic disposal of every `IDisposable` and `IAsyncDisposable` regardless of lifetime — something the standard .NET container doesn't do for singletons.
+
+| Feature | Description |
+|---|---|
+| Attribute registration | Decorate classes with `[Singleton<T>]`, `[ScopedService<T>]`, or `[TransientService<T>]` — no manual wiring required |
+| Interface registration | Alternatively implement `ISingleton<T>`, `IScopedService<T>`, or `ITransientService<T>` for compile-time service-type checking |
+| Property injection | `[Inject]` properties populated after construction in any project type, not just Blazor |
+| Configuration binding | `[ConfigSection]` binds and registers an options class from `appsettings.json` in one step |
+| Deterministic disposal | All `IDisposable`/`IAsyncDisposable` instances — including singletons — are disposed when the container or scope tears down |
+| Keyed services | Full support for .NET keyed service registration and injection |
+| MVC controller injection | Property injection on ASP.NET Core controllers wired automatically |
+| Assembly scanning | Scan one or more assemblies; discovered types are registered without any per-class wiring |
+
+---
+
+## Packages
+
+The library ships three packages. The Abstractions package is included transitively — most projects don't need to reference it directly.
+
+| Package | NuGet | Description |
+|---|---|---|
+| `RossWright.MetalInjection.Server` | [NuGet](https://www.nuget.org/packages/RossWright.MetalInjection.Server) | ASP.NET Core — `AddMetalInjection` on `WebApplicationBuilder`, controller activator, hosted-service registration |
+| `RossWright.MetalInjection.Blazor` | [NuGet](https://www.nuget.org/packages/RossWright.MetalInjection.Blazor) | Blazor WebAssembly — `AddMetalInjection` on `WebAssemblyHostBuilder` |
+| `RossWright.MetalInjection` | [NuGet](https://www.nuget.org/packages/RossWright.MetalInjection) | MetalCommand console apps and any other .NET project using `IServiceProvider` |
+
+---
 
 ## Installation
-Metal Injection can be used on server and client projects of any kind: anywhere you want to use a service provider.
-Note that configuration binding only works for projects where configuration binding normally works, so it does not work for Blazor projects.
 
-Choose the package that matches your project type:
+Add the package that matches your project type:
 
 ```powershell
 # ASP.NET Core
 dotnet add package RossWright.MetalInjection.Server
+```
 
+```powershell
 # Blazor WebAssembly
 dotnet add package RossWright.MetalInjection.Blazor
+```
 
+```powershell
 # MetalCommand console / other .NET projects
 dotnet add package RossWright.MetalInjection
 ```
 
-### Server Setup
-To setup MetalInjection and auto-register services and configurations on an ASP.NET Core project,
-add the [RossWright.MetalInjection.Server](https://www.nuget.org/packages/RossWright.MetalInjection.Server/) nuget package to your project
-and call `AddMetalInjection` on the `WebApplicationBuilder` in your program.cs file:
+---
+
+## Quick Start
+
+The example below shows an ASP.NET Core server. Call `AddMetalInjection` on `WebApplicationBuilder` and point it at your assembly — everything decorated with a registration attribute is registered automatically.
+
 ```csharp
+// Program.cs — ASP.NET Core
 var builder = WebApplication.CreateBuilder(args);
 builder.AddMetalInjection(_ => _.ScanThisAssembly());
+
+var app = builder.Build();
+app.Run();
 ```
 
-> **MVC Controller Property Injection:** `AddMetalInjection` on `WebApplicationBuilder` automatically registers `MetalInjectionControllerActivator`, which enables `[Inject]` property injection on ASP.NET Core MVC controllers. No additional setup is required — just decorate controller properties with `[Inject]` and they will be populated on every request.
+Decorate your service implementation — no manual `services.Add...` call needed:
 
-### Blazor Client Setup
-To setup MetalInjection and auto-register service on a Blazor project, 
-add the [RossWright.MetalInjection.Blazor](https://www.nuget.org/packages/RossWright.MetalInjection.Blazor/) nuget package to your project
-and call `AddMetalInjection` on the `WebAssemblyHostBuilder` in your program.cs file:
 ```csharp
+[Singleton<IEmailService>]
+public class EmailService(IConfiguration config) : IEmailService
+{
+    public Task SendAsync(string to, string subject, string body) => ...;
+}
+```
+
+Inject it anywhere via constructor or property:
+
+```csharp
+public class WelcomeHandler(IEmailService _email) : IRequestHandler<SendWelcome>
+{
+    public async Task Handle(SendWelcome request, CancellationToken ct)
+        => await _email.SendAsync(request.To, "Welcome!", "Thanks for signing up.");
+}
+```
+
+For Blazor WebAssembly, the call is the same shape on `WebAssemblyHostBuilder`:
+
+```csharp
+// Program.cs — Blazor WASM
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.AddMetalInjection(_ => _.ScanThisAssembly());
+await builder.Build().RunAsync();
 ```
 
-### MetalCommand Client Setup
-To setup MetalInjection and auto-register services and configurations on a MetalCommand Console project
-add the [RossWright.MetalInjection](https://www.nuget.org/packages/RossWright.MetalInjection/) nuget package to your project
-and call `AddMetalInjection` on the `ConsoleApplicationBuilder` in your program.cs file:
+For a MetalCommand console app, use `IConsoleApplicationBuilder`:
+
 ```csharp
+// Program.cs — MetalCommand
 var builder = ConsoleApplication.CreateBuilder(args);
 builder.AddMetalInjection(_ => _.ScanThisAssembly());
+await builder.Build().RunAsync();
 ```
 
-### Other Projects Setup
-To setup MetalInjection and auto-register services and configurations on a console project or any other project type using IServiceProvider, 
-add the [RossWright.MetalInjection](https://www.nuget.org/packages/RossWright.MetalInjection/) nuget package to your project,
-construct a ServiceCollection as normal maybe registering some services directly on it
-and call `BuildMetalInjectionServiceProvider` on the `IServiceCollection` in your program.cs file (instead of BuildServiceProvider):
-```csharp
-var serviceCollection = new ServiceCollection();
-...
-// potentially register services directly instead of via reflection
-...
-var serviceProvider = serviceCollection
-     .BuildMetalInjectionServiceProvider(options => 
-     {
-          options.ScanThisAssembly();
-     });
-```
-and then use the returned serviceProvider for activation as normal.
+> **Note:** For non-host projects that work with a bare `IServiceCollection`, call `BuildMetalInjectionServiceProvider` instead of `BuildServiceProvider`. See [Advanced Registration](#advanced-registration) in Esoterica.
 
 ---
+
 ## Registration
-To specify a class should be registered as a service during the reflection scan, decorate the implementation with an attribute:
+
+Telling MetalInjection about a class takes one of two forms: decorating it with a registration attribute, or implementing a marker interface. Both are discovered automatically during the assembly scan — no manual `services.Add...` call is needed.
+
+### Attributes vs. Interfaces
+
+The attribute form is the most common:
+
 ```csharp
-[Singleton<ISampleService>]
-public class SampleService : ISampleService
+[Singleton<IEmailService>]
+public class EmailService : IEmailService { ... }
+
+[ScopedService<IOrderRepository>]
+public class OrderRepository : IOrderRepository { ... }
+
+[TransientService<IPdfRenderer>]
+public class PdfRenderer : IPdfRenderer { ... }
 ```
-or implement an interface:
+
+The interface form is an alternative that gives you a compile-time guarantee that the class actually implements the service type it claims to provide:
+
 ```csharp
-public class SampleService : ISampleService, ISingleton<ISampleService>
+public class EmailService : IEmailService, ISingleton<IEmailService> { ... }
 ```
 
-Attributes and interfaces are provided for:
-* `[Singleton<>]` or `ISingleton<>` for singleton lifetime services
-* `[ScopedService<>]` or `IScopedService<>` for scoped lifetime services
-* `[TransientService<>]` or `ITransientService<>` for transient lifetime services.
+With the attribute form, the same guarantee is enforced at startup — MetalInjection throws if the decorated class doesn't implement the specified service type. Choose whichever form keeps the declaration closest to the code you're reading; there's no behavioral difference.
 
-Using the interface syntax has the benefit of providing compile-time checking that a class actually implements the service type it is registered to provide. Services registered via attribute will be checked for implementation of the specified service type on initialization resulting in a run-time exception if it does not.
+| Attribute | Interface | Lifetime |
+|---|---|---|
+| `[Singleton<T>]` | `ISingleton<T>` | Single instance for the lifetime of the container |
+| `[ScopedService<T>]` | `IScopedService<T>` | One instance per DI scope |
+| `[TransientService<T>]` | `ITransientService<T>` | New instance on every resolution |
 
-If you are not using an interface for injecting your service and want to register your implementation type as itself, then you can set the type parameter of the attribute or interface to the implementation type itself, but you should really ask yourself why you're using dependency injection in the first place!
+### Registering Under Multiple Service Types
 
-### Registering One Implementation Under Multiple Service Types
-You can stack multiple registration attributes on a single class to expose it under several service interfaces:
+Stack multiple attributes to expose one implementation under several interfaces. MetalInjection ensures that all stacked singletons and scoped registrations resolve to the same shared instance — the class is only constructed once per appropriate lifetime boundary.
+
 ```csharp
 [Singleton<IMyReadService>]
 [Singleton<IMyWriteService>]
-public class MyService : IMyReadService, IMyWriteService
+public class MyService : IMyReadService, IMyWriteService { ... }
 ```
-MetalInjection guarantees that all stacked registrations for the same implementation resolve to **the same instance** within the appropriate lifetime scope:
 
-| Lifetime | Behavior |
-|---|---|
-| **Singleton** | All stacked interfaces return the same instance for the lifetime of the container. |
-| **Scoped** | All stacked interfaces return the same instance within a scope; a new shared instance is created for each new scope. |
-| **Transient** | Each resolution creates a new instance regardless of which interface is used — there is no instance sharing across stacked transient registrations. |
+Transient registrations are the exception: each resolution produces a new instance regardless of which interface was requested.
 
-> **Note:** Stacking multiple `[ScopedService<>]` or `[TransientService<>]` attributes on a single class requires `AllowMultiple = true`, which is set on these attributes. `[Singleton<>]` also supports stacking.
+### Scanning Assemblies
+
+`ScanThisAssembly()` discovers all decorated types in the calling assembly. When your registrations are spread across multiple assemblies — for example, a shared contracts project — scan each one explicitly:
+
+```csharp
+builder.AddMetalInjection(_ =>
+{
+    _.ScanThisAssembly();
+    _.ScanAssembly(typeof(SomeTypeInAnotherAssembly).Assembly);
+});
+```
+
+### Allowing Multiple Implementations
+
+By default MetalInjection enforces one implementation per service type and throws at startup if a duplicate is detected. When you genuinely need multiple implementations of the same interface — for example, a collection of event handlers — you have two options.
+
+Apply `[AllowMultipleRegistrations]` directly to the interface declaration:
+
+```csharp
+[AllowMultipleRegistrations]
+public interface IEventHandler { ... }
+```
+
+Or opt in per-type at registration time:
+
+```csharp
+builder.AddMetalInjection(_ =>
+{
+    _.ScanThisAssembly();
+    _.AllowMultipleServicesOf<IEventHandler>();
+});
+```
+
+Either way, resolve the full set via `IEnumerable<IEventHandler>` — resolving a single instance when multiple are registered remains an error.
+
+> **Note:** For keyed service registration, open-generic factory registration, and global duplicate suppression via `AllowMultipleServicesOfAnyType`, see [Esoterica](#esoterica).
 
 ---
 ## Injection
-Services can be injected into your components, controllers, services, etc. via constructors or Blazor `@inject` or `[Inject]` exactly the same way you do with normal .NET dependency injection.
-MetalInjection also supports for optional injection (inject only if the service is registered),  
-multiple injection (inject all registered implementations for a service type) 
-and blazor-style property injection for all environments using Inject attributes.
+
+Constructor injection works exactly as it does in standard .NET DI — no attributes, no configuration. MetalInjection also adds property injection for any project type (not just Blazor) and optional injection driven by nullability, so you can express intent in the type system rather than with try/catch blocks.
+
+### Constructor Injection
+
+Declare dependencies as constructor parameters and they're resolved from the container automatically:
+
+```csharp
+public class OrderService(IOrderRepository _repo, IEmailService _email) : IOrderService
+{
+    public async Task PlaceOrderAsync(Order order, CancellationToken ct)
+    {
+        await _repo.SaveAsync(order, ct);
+        await _email.SendConfirmationAsync(order.CustomerEmail, ct);
+    }
+}
+```
 
 ### Property Injection
-To inject a service, simply preface a property of the service type with the `[Inject]` attribute.
-```
-public class MyServiceThatUsesAnotherService
+
+Property injection is useful when you can't or don't want to add a constructor parameter — for example, in base classes, in types activated by a framework that controls construction, or for optional dependencies that would clutter the constructor signature. Decorate any settable property with `[Inject]` and MetalInjection populates it after construction:
+
+```csharp
+public class ReportGenerator
 {
-   [Inject] private IAnotherService _anotherSvc { get; set; } = null!;
+    [Inject] private IReportFormatter _formatter { get; set; } = null!;
+
+    public string Generate(ReportData data) => _formatter.Format(data);
 }
 ```
-Both the `InjectAttribute` classes in the `Microsoft.AspNetCore.Components` namespace and `RossWright.MetalInjection` namespaces will work, so use whichever is convenient. If needed you can also specify an additional alternate inject attribute of your choosing using the `SetAlternateInjectAttribute` method on initialization of MetalInjection like this:
-```csharp
-builder.AddMetalInjection(_ => 
-{   
-    _.ScanThisAssembly();
-    _.SetAlternateInjectAttribute<MyInjectAttribute>();
-});
-```
-You can also optionally provide a `Func<TInjectAttribute, object?>` parameter to provide a key for keyed service injection using your custom attribute instance.
 
-Note if an injected service is needed in the constructor of your class, you need to use constructor injection instead as property injection occurs after the constructor is called.
+Both `RossWright.MetalInjection.InjectAttribute` and Blazor's `Microsoft.AspNetCore.Components.InjectAttribute` are recognized — use whichever is already imported.
+
+> **Note:** Property injection runs after the constructor. If you need a dependency inside the constructor body, use constructor injection instead.
+
+#### MVC Controllers
+
+When you call `AddMetalInjection` on a `WebApplicationBuilder`, MetalInjection automatically replaces the default controller activator with `MetalInjectionControllerActivator`. All ASP.NET Core controllers get property injection with no extra wiring.
 
 ### Optional Injection
-You can specify a service be injected if it's been registered and null otherwise, use the option parameter syntax on your constructor. Like this:
-```csharp
-public class MyComponent(IOptionalService? optionalService = null)
-```
-If a service is registered for that type, it is injected otherwise the parameter is null.
 
-If you are using property injection it works much the same:
+Mark a constructor parameter or property as nullable and MetalInjection treats it as optional — the dependency is injected if registered, and `null` is passed if it isn't:
+
 ```csharp
-public class MyServiceThatUsesAnotherService
-{
-   [Inject] private IOptionalService? _anotherSvc { get; set; }
-}
+// constructor — optional parameter
+public class NotificationService(ISlackClient? slackClient = null) { ... }
+
+// property — optional property
+[Inject] private IAuditLogger? _audit { get; set; }
 ```
 
-You can also override nullability inference explicitly using the `Optional` property on `[Inject]`:
-```csharp
-// Force optional even though the type is non-nullable:
-[Inject(Optional = true)] private IRequiredLookingService _svc { get; set; } = null!;
+You can override nullability inference explicitly using the `Optional` property on `[Inject]`:
 
-// Force required even though the type is nullable (throws if not registered):
-[Inject(Optional = false)] private IOptionalLookingService? _svc { get; set; }
+```csharp
+// force optional even though the type is non-nullable
+[Inject(Optional = true)] private IFallbackService _fallback { get; set; } = null!;
+
+// force required even though the type is nullable
+[Inject(Optional = false)] private IRequiredService? _svc { get; set; }
 ```
 
 ### Keyed Service Injection
-Standard .NET keyed services are fully supported. Register a keyed service as normal, then inject it in a constructor using the `[FromKeyedServices]` attribute:
+
+Standard .NET keyed services are fully supported. Register a keyed service as normal, then inject it by passing the key to `[Inject]`:
+
 ```csharp
-// Registration
+// registration (standard .NET keyed service API)
 services.AddKeyedSingleton<IMessageService, SmsService>("sms");
 services.AddKeyedSingleton<IMessageService, EmailService>("email");
 
-// Constructor injection
+// constructor injection — use [FromKeyedServices] or [Inject("key")]
 public class NotificationService(
-    [FromKeyedServices("sms")] IMessageService smsService,
-    [FromKeyedServices("email")] IMessageService emailService)
+    [Inject("sms")] IMessageService _sms,
+    [Inject("email")] IMessageService _email) { ... }
+
+// property injection — same key syntax
+[Inject("sms")] private IMessageService _sms { get; set; } = null!;
+```
+
+### Injecting All Implementations
+
+When multiple implementations of the same service type are registered (see [Allowing Multiple Implementations](#allowing-multiple-implementations) in Registration), inject `IEnumerable<T>` to receive all of them:
+
+```csharp
+public class EventDispatcher(IEnumerable<IEventHandler> _handlers)
 {
-    // ...
+    public async Task DispatchAsync(Event e, CancellationToken ct)
+    {
+        foreach (var handler in _handlers)
+            await handler.HandleAsync(e, ct);
+    }
 }
 ```
-For property injection with a keyed service, supply a `Func<TInjectAttribute, object?>` key selector when configuring your alternate inject attribute (see `SetAlternateInjectAttribute` in the Property Injection section above).
 
-### Multiple Service Implementation Injection
-By default MetalInjection only allows one implementation to be registered for each service type. This can be altered at initialization by specifying specific types allowed to be registered multiple times:
-```csharp
-builder.AddMetalInjection(_ => 
-{   
-    _.ScanThisAssembly();
-    _.AllowMultipleServicesOf<MyMultipleService>();
-    _.AllowMultipleServicesOf<MyOtherMultipleService>();
-});
-```
-or just turning off this constraint entirely:
-```csharp
-builder.AddMetalInjection(_ => 
-{   
-    _.ScanThisAssembly();
-    _.AllowMultipleServicesOfAnyType();
-});
-```
-
-Alternatively, you can place `[AllowMultipleRegistrations]` directly on the service **interface**. This is the most ergonomic option when the interface is owned by your project, as it co-locates the intent with the type declaration and requires no call-site configuration:
-```csharp
-[AllowMultipleRegistrations]
-public interface IMultiService { ... }
-```
-Any number of implementations of `IMultiService` may then be registered without error. Resolve all of them via `IEnumerable<IMultiService>` as shown below.
-To inject all services registered for a service type, use `IEnumerable<>` (as normal) like this:
-```csharp
-public class MyServiceThatUsesMultipleServicesOfTheSameType(
-    IEnumerable<MyMultipleService> multSvcs)
-```
-The collection will be empty if no implementations are registered.
-
-It works similarly for property injection:
-```csharp
-public class MyServiceThatUsesMultipleServicesOfTheSameType
-{
-   [Inject] private IEnumerable<IMultiService> _multiServices { get; set; } = null!;
-}
-```
+The collection is empty if no implementations are registered — it's never null.
 
 ---
-## Activation
-When an object is instantiated using Microsoft's `ActivatorUtilities.CreateInstance`, property injection is not resolved. When using MetalInjection the `ActivatorUtilities` class in the `RossWright.MetalInjection` namespace should be used to ensure property injection happens. Some suggestions on how to handle this cleanly in your project:
 
-* Add a global using to a file (perhaps program.cs) in your project like this: 
+## Activation
+
+`Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance` creates objects outside the normal DI resolution path, so MetalInjection can't intercept the call to run property injection. Use the MetalInjection equivalents instead and `[Inject]` properties are populated automatically.
+
+### Using MetalInjection's ActivatorUtilities
+
+Drop in `RossWright.MetalInjection.ActivatorUtilities` anywhere you'd use the BCL version. A global using alias keeps the call sites clean:
+
 ```csharp
-global using ActivatorUtilities = RossWright.MetalInjection.ActivatorUtilities
+// add once — typically in Program.cs or a global usings file
+global using ActivatorUtilities = RossWright.MetalInjection.ActivatorUtilities;
 ```
-* Call `RossWright.MetalInjection.ActivatorUtilities.CreateInstance` explicitly.
-* If you cannot control the call to ActivatorUtilities.CreateInstance because it is down in some third-party code or something, you can inject the service `IMetalInjectionServiceProvider` and call `InjectProperties` on the instance of an object to resolve any injectable properties. 
-* You can even inject `IMetalInjectionServiceProvider` via the constructor of the service using property injection and call it in the constructor - if you're really dedicated to using property injection. Like this:
+
+Then call it as normal — property injection happens transparently:
+
 ```csharp
-public class ActivatedBeyondMyControl
-{
-   public ActivatedBeyondMyControl(IMetalInjectionServiceProvider serviceProvider)
-   {
-      serviceProvider.InjectProperties(this);
-   }
- 
-   [Inject] private INeededService _neededSvc { get; set; } = null!;
-   ...
-}
+var instance = ActivatorUtilities.CreateInstance<MyService>(serviceProvider);
 ```
-* MetalInjection also provides an extension method on `IServiceProvider` for `CreateInstance` that will invoke property injection and takes non-injected parameters if needed. Like this:
+
+### IServiceProvider Extension
+
+The `CreateInstance<T>` extension on `IServiceProvider` is a convenient alternative when you have a provider reference and need to pass extra non-injected arguments:
+
 ```csharp
 [ScopedService<IMyService>]
-class MyService(ISomeInjectedService svc, int someParameter) : IMyService
-...
-serviceProvider.CreateInstance<MyService>(123);
+public class MyService(ISomeInjectedService _svc, int timeout) : IMyService { ... }
 
+// timeout is passed explicitly; ISomeInjectedService is resolved from the provider
+var instance = serviceProvider.CreateInstance<MyService>(30);
 ```
-In this example `ISomeInjectedService` is injected from the service provider and 123 is sent for someParameter.
+
+### Manual Property Injection
+
+When an object is created by code you don't control — a third-party framework, a reflection-based factory — inject `IMetalInjectionServiceProvider` and call `InjectProperties` directly:
+
+```csharp
+public class FrameworkActivatedType
+{
+    public FrameworkActivatedType(IMetalInjectionServiceProvider serviceProvider)
+    {
+        serviceProvider.InjectProperties(this);
+    }
+
+    [Inject] private INeededService _neededSvc { get; set; } = null!;
+}
+```
+
+You can also call `serviceProvider.InjectProperties(obj)` from outside the class if you hold a reference to the instance after construction.
 
 ---
 ## Configuration Sections
 
-> **Note:** Configuration binding is not available in Blazor WebAssembly projects because the WebAssembly runtime does not support the configuration binding APIs used by MetalInjection. `[ConfigSection]` attributes are silently ignored when using `AddMetalInjection` on a `WebAssemblyHostBuilder`.
-
-MetalInjection can automatically bind sections of your app configuration
+Instead of writing `services.Configure<MyOptions>(config.GetSection("MySection"))` for every options class, decorate the class with `[ConfigSection]` and MetalInjection binds it to the matching `appsettings.json` section and registers it as a singleton automatically — no manual wiring needed.
 
 ### Basic Usage
 
-Decorate a class with `[ConfigSection]` and give it the configuration section path. The class will be instantiated, bound to that section, and registered as a singleton injectable by its concrete type:
+Decorate a class with `[ConfigSection]` and give it the configuration section path. The class is bound to that section and registered as a singleton injectable by its concrete type:
 
 ```csharp
 [ConfigSection("MyApp:Database")]
@@ -305,7 +394,7 @@ public class DatabaseSettings
 }
 ```
 
-Inject it by the concrete type as normal:
+Inject it by its concrete type as normal:
 
 ```csharp
 public class MyRepository(DatabaseSettings settings) { ... }
@@ -313,7 +402,7 @@ public class MyRepository(DatabaseSettings settings) { ... }
 
 ### Registering as an Interface
 
-To register the config class to be registered as an interface type rather than the concrete class, use the generic form of the attribute:
+Use the generic form of the attribute to register the settings class under an interface type rather than the concrete class. The class must implement the specified interface or a run-time exception is thrown on startup:
 
 ```csharp
 public interface IDatabaseSettings
@@ -330,7 +419,7 @@ public class DatabaseSettings : IDatabaseSettings
 }
 ```
 
-The class must implement the specified interface or a run-time exception is thrown on startup. Inject by the interface:
+Inject by the interface:
 
 ```csharp
 public class MyRepository(IDatabaseSettings settings) { ... }
@@ -338,7 +427,7 @@ public class MyRepository(IDatabaseSettings settings) { ... }
 
 ### Validation
 
-To validate configuration values at startup, implement `IValidatingConfigSection` on your settings class and throw an appropriate exception from `ValidateOrDie()` if the configuration is invalid. This prevents the application from starting with bad configuration:
+Incorrect configuration is easier to diagnose when the application refuses to start than when it fails at runtime. Implement `IValidatingConfigSection` on your settings class and throw from `ValidateOrDie()` for any invalid value — MetalInjection calls it immediately after binding, before any services are resolved:
 
 ```csharp
 [ConfigSection<IDatabaseSettings>("MyApp:Database")]
@@ -357,11 +446,9 @@ public class DatabaseSettings : IDatabaseSettings, IValidatingConfigSection
 }
 ```
 
-`ValidateOrDie()` is called immediately after binding during startup. If it throws, the exception propagates and prevents the application from continuing.
-
 ### Non-Hosted Projects
 
-When using `BuildMetalInjectionServiceProvider` directly (see [Other Projects Setup](#other-projects-setup)), pass your `IConfiguration` instance to enable config section binding:
+When using `BuildMetalInjectionServiceProvider` directly (see [Advanced Registration](#advanced-registration) in Esoterica), pass your `IConfiguration` instance to enable config section binding:
 
 ```csharp
 var configuration = new ConfigurationBuilder()
@@ -378,7 +465,7 @@ Without a configuration instance, `[ConfigSection]` attributes are ignored and n
 
 ### Advanced: Multiple Sections on One Class
 
-A single class can be decorated with multiple `[ConfigSection]` attributes. All sections are bound to the **same instance** in the order the attributes appear. This is useful when a single settings object aggregates values from several configuration paths, or needs to be injectable by multiple interface types:
+A single class can carry multiple `[ConfigSection]` attributes. All sections are bound to the same instance in the order the attributes appear — useful when a settings object aggregates values from several configuration paths, or needs to be injectable by multiple interface types:
 
 ```csharp
 [ConfigSection<IFeatureFlags>("MyApp:Features")]
@@ -398,7 +485,9 @@ public class AppPolicySettings : IFeatureFlags, ILimitsConfig, IValidatingConfig
 }
 ```
 
-Both `IFeatureFlags` and `ILimitsConfig` will resolve to the same `AppPolicySettings` instance.
+Both `IFeatureFlags` and `ILimitsConfig` resolve to the same `AppPolicySettings` instance.
+
+> **Note:** Configuration binding is not available in Blazor WebAssembly projects — the WebAssembly runtime doesn't support the configuration binding APIs MetalInjection uses. `[ConfigSection]` attributes are silently ignored when using `AddMetalInjection` on a `WebAssemblyHostBuilder`.
 
 ---
 ## ASP.NET Core Hosted Services
@@ -816,11 +905,43 @@ All four methods are extension methods on `IServiceCollection` in the `RossWrigh
 - The `sp` argument passed to the factory is the current scope's `IServiceProvider`, so you can call `sp.GetRequiredService<T>()` inside the factory to pull in other dependencies.
 - Instances returned by the factory participate in the normal disposal pipeline (see [Disposal](#disposal)).
 
----
+### Bootstrap Logging
 
+`AddMetalInjection` supports startup-time diagnostic logging via `UseBootstrapLogger`. Because the standard `ILogger` pipeline isn't available during DI registration, you supply an `ILoggerFactory` before the container is built. MetalInjection uses it to report which services were found, registered, skipped, or rejected during assembly scanning.
+
+To enable console output during startup, use `AddMetalConsoleLogger` from `RossWright.MetalCore`:
+
+```csharp
+builder.AddMetalInjection(options =>
+{
+    options.UseBootstrapLogger(logging =>
+    {
+        logging.ClearProviders();
+        logging.AddMetalConsoleLogger();
+        logging.AddDebug();
+        logging.SetMinimumLevel(LogLevel.Debug);
+    });
+    options.ScanThisAssembly();
+});
+```
+
+Call `options.DoNotUseLogger()` to suppress all bootstrap output (the default in Release builds if no factory is supplied).
+
+---
+## See Also
+
+| Package | Purpose |
+|---|---|
+| [`RossWright.MetalChain`](../MetalChain/README.md) | Mediator pattern: `IRequest` / `IRequestHandler` / `IMediator` |
+| [`RossWright.MetalNexus`](../MetalNexus/README.md) | HTTP mediator bridge — connects MetalChain to ASP.NET Core and Blazor over HTTP |
+| [`RossWright.MetalGuardian`](../MetalGuardian/README.md) | Authentication and authorization for the Metal stack |
+| [`RossWright.MetalCommand`](../MetalCommand/README.md) | Interactive console application host |
+| [`RossWright.MetalCore`](../MetalCore/RossWright.MetalCore/README.md) | Foundation utilities shared across the Metal libraries |
+
+---
 ## License
 
-All **Ross Wright Metal Libraries** including this one are licensed under **Apache License 2.0 with Commons Clause**.
+All **Ross Wright Metal Libraries**
 
 **You are free to**:
 - Use the libraries in any project (personal or commercial)
@@ -832,3 +953,6 @@ All **Ross Wright Metal Libraries** including this one are licensed under **Apac
 - Repackage them with minimal changes and sell them as your own standalone product
 
 Full legal text: [LICENSE.md](./LICENSE.md)
+
+---
+[Changelog](CHANGELOG.txt)

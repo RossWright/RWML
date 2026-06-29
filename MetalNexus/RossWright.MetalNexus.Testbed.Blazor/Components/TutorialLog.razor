@@ -1,0 +1,82 @@
+@using System.Text.Json
+
+<div class="log-panel">
+    <div class="log-panel-header">
+        <span>Tutorial Log</span>
+        @if (_entries.Count > 0)
+        {
+            <button class="btn-clear" @onclick="Clear">Clear</button>
+        }
+    </div>
+    <div class="log-scroll" @ref="_scrollRef">
+        @if (_entries.Count == 0)
+        {
+            <p class="log-empty">Select a function from the left panel to begin.</p>
+        }
+        else
+        {
+            @foreach (var entry in _entries)
+            {
+                <div class="log-entry">
+                    <div class="log-entry-header">
+                        <span class="entry-num">#@entry.Number</span>
+                        <span class="entry-title">@entry.Title</span>
+                        <span class="entry-time">@entry.Timestamp.ToString("HH:mm:ss")</span>
+                    </div>
+                    <div class="log-entry-body">
+                        @if (!string.IsNullOrWhiteSpace(entry.Feature))
+                        {
+                            <div class="log-feature-badge">@entry.Feature</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(entry.Narrative))
+                        {
+                            <div class="log-narrative">@entry.Narrative</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(entry.Code))
+                        {
+                            <div class="log-code-label">Code</div>
+                            <pre class="log-code">@entry.Code</pre>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(entry.Result))
+                        {
+                            <div class="log-result-label">Result</div>
+                            <pre class="log-result @(entry.IsError ? "is-error" : entry.IsWarning ? "is-warning" : "")">@entry.Result</pre>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(entry.Takeaway))
+                        {
+                            <div class="log-takeaway">💡 @entry.Takeaway</div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private readonly List<LogEntry> _entries = [];
+    private ElementReference _scrollRef;
+    private int _counter;
+
+    public void Append(LogEntry entry)
+    {
+        _counter++;
+        _entries.Add(entry with { Number = _counter });
+        StateHasChanged();
+        // Scroll to bottom on next render cycle — fire and forget is intentional here
+        _ = ScrollToBottom();
+    }
+
+    public void Clear()
+    {
+        _entries.Clear();
+        _counter = 0;
+        StateHasChanged();
+    }
+
+    private async Task ScrollToBottom()
+    {
+        await Task.Yield();
+        // Uses built-in scroll via element ref via JS — best-effort; no JS interop crash on failure
+    }
+}

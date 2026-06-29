@@ -23,7 +23,7 @@ public interface ICommand
 
 /// <summary>
 /// Describes a command — its display name, invocation tokens, arguments, and help text.
-/// Used by <c>ILegacyCommand</c> and built by the framework for attribute-driven <see cref="ICommand"/> commands.
+/// Built by the framework from attribute-driven <see cref="ICommand"/> commands.
 /// </summary>
 public class CommandDescriptor
 {
@@ -42,8 +42,8 @@ public class CommandDescriptor
 }
 
 /// <summary>
-/// Describes a single argument on a command. Used by <c>ILegacyCommand</c> implementations
-/// and constructed from <see cref="ArgAttribute"/> for attribute-driven commands.
+/// Describes a single argument on a command, constructed from <see cref="ArgAttribute"/>
+/// for attribute-driven commands.
 /// </summary>
 public class ArgumentDescriptor
 {

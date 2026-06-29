@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Reflection;
@@ -105,8 +106,8 @@ public class MetalInjectionOptionsBuilder
     /// <param name="configuration">Optional application configuration used to bind config objects.</param>
     public void InitializeServices(IServiceCollection services, IConfiguration? configuration)
     {
-        LoadLog?.LogTrace($"Autoloading Services and Config Objects");
-        using var logScope = LoadLog?.BeginScope();
+        var logger = GetBootstrapLogger();
+        using var logScope = logger?.BeginScope("Autoloading Services and Config Objects");
 
         Func<Type, bool> IsServiceInterface = _ => _.IsGenericType &&
             (typeof(ISingleton<>).IsAssignableFrom(_.GetGenericTypeDefinition())
@@ -140,7 +141,7 @@ public class MetalInjectionOptionsBuilder
                 .DistinctBy(_ => (_.ServiceInterfaceType, _.Key)))
             .ToList();
 
-        LoadLog?.LogTrace($"Found {discoveries.Count} services:");
+        logger?.LogTrace($"Found {discoveries.Count} services:");
         foreach (var service in discoveries)
         {
             if ((!service.ServiceInterfaceType.ContainsGenericParameters &&
@@ -150,12 +151,12 @@ public class MetalInjectionOptionsBuilder
                     .Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == service.ServiceInterfaceType)))
             {
                 var msg = $"Cannot register service {service.ServiceImplementationType} as it does not implement {service.ServiceInterfaceType}";
-                LoadLog?.LogError(msg);
+                logger?.LogError(msg);
                 throw new MetalInjectionException(msg);
             }
             else
             {
-                LoadLog?.LogTrace($"{service.ServiceImplementationType} implements {service.Lifetime} {service.ServiceInterfaceType}{(service.Key != null ? $" (key: {service.Key})" : "" )}");
+                logger?.LogTrace($"{service.ServiceImplementationType} implements {service.Lifetime} {service.ServiceInterfaceType}{(service.Key != null ? $" (key: {service.Key})" : "" )}");
             }
         }
         discoveries.RemoveAll(_ => _.IsFaulted);
@@ -165,7 +166,7 @@ public class MetalInjectionOptionsBuilder
             // Get the entry assembly name for any dominance collisions
             var entryAsmName = _alternateEntryAssembly?.FullName
                 ?? Assembly.GetEntryAssembly()?.FullName;
-            LoadLog?.LogTrace($"Entry Asm Name: {entryAsmName}");
+            logger?.LogTrace($"Entry Asm Name: {entryAsmName}");
 
             // Inspect the services that have multiple implementations
             foreach (var group in discoveries
@@ -190,7 +191,7 @@ public class MetalInjectionOptionsBuilder
                         .Where(_ => _.Key == null &&
                                     _.ServiceImplementationType.Assembly.FullName != entryAsmName)
                         .ToList();
-                    LoadLog?.LogWarning($"Multiple services were registered for {group.Key} without keys. Since " +
+                    logger?.LogWarning($"Multiple services were registered for {group.Key} without keys. Since " +
                         $"{winners[0].ServiceImplementationType.FullName} is the lone service registered in the entry assembly, " +
                         $"only it will be registered without key. The following service implementations will not be registered: " +
                         losers.Select(_ => $"{_.ServiceImplementationType.FullName}{_.Key.ToStringIfPresent(_ => $" [{_}]")}").CommaListJoin());
@@ -202,7 +203,7 @@ public class MetalInjectionOptionsBuilder
                         $"or configuring MetalInjection to allow multiple registrations for this (or all) type(s). " +
                         $"The following implementations were registered: " +
                         $"{(group.Select(_ => $"{_.ServiceImplementationType.FullName}{_.Key.ToStringIfPresent(_ => $" [{_}]")}").CommaListJoin())}";
-                LoadLog?.LogError(msg);
+                logger?.LogError(msg);
                 throw new MetalInjectionException(msg);
             }
             discoveries.RemoveAll(_ => _.IsFaulted);
@@ -265,7 +266,7 @@ public class MetalInjectionOptionsBuilder
             var foundConfigTypes = ConsideredTypes
                 .Where(type => type.GetCustomAttributes(typeof(ConfigSectionAttribute), true).Length > 0)
                 .ToArray();
-            LoadLog?.LogTrace($"Found {foundConfigTypes.Length} Config Objects:");
+            logger?.LogTrace($"Found {foundConfigTypes.Length} Config Objects:");
             foreach (var configType in foundConfigTypes)
             {
                 var sectionAttributes = configType.GetCustomAttributes(typeof(ConfigSectionAttribute), false);
@@ -282,7 +283,7 @@ public class MetalInjectionOptionsBuilder
                         if (!configType.IsAssignableTo(sectionAttribute.RegisterAs))
                         {
                             var msg = $"Cannot register configuration class {configType} as it does not implement {sectionAttribute.RegisterAs} as specified";
-                            LoadLog?.LogError(msg);
+                            logger?.LogError(msg);
                             throw new MetalInjectionException(msg);
                         }
                         services.AddSingleton(sectionAttribute.RegisterAs, instance);
@@ -300,7 +301,7 @@ public class MetalInjectionOptionsBuilder
                         .Where(_ => _ is not null)
                         .ToList();
                     if (hasRegisteredConcrete) sectionRegisterTypes.Add(instance.GetType());
-                    LoadLog?.LogTrace($"Bound type {configType} to section(s) {string.Join(',', sectionTitles)} " +
+                    logger?.LogTrace($"Bound type {configType} to section(s) {string.Join(',', sectionTitles)} " +
                         $"and registered as {string.Join(',', sectionRegisterTypes.Select(_ => _!.Name))}");
                 }
             }

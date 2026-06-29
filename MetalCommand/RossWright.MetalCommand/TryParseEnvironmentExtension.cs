@@ -1,5 +1,8 @@
 namespace RossWright.MetalCommand;
 
+/// <summary>
+/// Parsing helpers for environment names supplied to MetalCommand commands.
+/// </summary>
 public static class TryParseEnvironmentExtension
 {
     /// <summary>

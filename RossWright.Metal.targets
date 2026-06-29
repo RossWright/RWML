@@ -1,29 +1,37 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <Version>2026.1.1</Version>
-    <PackageVersion>2026.1.1</PackageVersion>
-    <AssemblyVersion>2026.1.1</AssemblyVersion>
+    <Version>2026.2.0</Version>
+    <PackageVersion>2026.2.0</PackageVersion>
+    <AssemblyVersion>2026.2.0</AssemblyVersion>
     <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Configurations>Debug;Release</Configurations>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Authors>RossWright</Authors>
     <Company>Pross Co</Company>
-    <Description>
-      Licensed under Apache 2.0 with Commons Clause — free to use in commercial products,
-      but you may not sell the Metal Libraries themselves or any product whose primary value comes from them.
-    </Description>
+    <Description>Foundational .NET libraries for Blazor WebAssembly, ASP.NET Core, dependency injection, mediator-style request dispatch, authentication, authorization, and shared application utilities.</Description>
+    <PackageTags>rosswright;metal;.net;dotnet;blazor;webassembly;aspnetcore;dependency-injection;mediator;authentication;authorization</PackageTags>
     <PackageIcon>metallogo.png</PackageIcon>
     <Copyright>Copyright 2023-2026 Pross Co</Copyright>
-    <PackageProjectUrl>https://RossWright.com</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/RossWright/RWML</PackageProjectUrl>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <RepositoryUrl>https://github.com/RossWright/NuMetal</RepositoryUrl>
+    <RepositoryUrl>https://github.com/RossWright/RWML</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    </PropertyGroup>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <DebugType>portable</DebugType>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
 
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">

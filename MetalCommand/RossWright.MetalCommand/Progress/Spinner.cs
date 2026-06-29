@@ -11,7 +11,7 @@ public class Spinner : IProgressIndicator
     /// <inheritdoc/>
     public int Width => 1;
 
-    /// <inheritdoc/>
     private int s = 0;
+    /// <inheritdoc/>
     public string Output(double progress) => spin[s++ % spin.Length].ToString();
 }

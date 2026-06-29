@@ -1,0 +1,33 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<Import Project="..\RossWright.Metal.targets" />
+
+	<PropertyGroup>
+		<Title>MetalNexus by Ross Wright</Title>
+		<Product>MetalNexus</Product>
+    <Description>MetalChain-over-HTTP transport for routing mediator requests to generated REST endpoints with Blazor WebAssembly clients, ASP.NET Core servers, Swagger/OpenAPI integration, file upload, authentication hooks, and exception marshalling.</Description>
+	</PropertyGroup>
+
+  <PropertyGroup>
+    <PackageReleaseNotes>$([System.IO.File]::ReadAllText("$(MSBuildThisFileDirectory)CHANGELOG.txt"))</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)CHANGELOG.txt">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)AI-USAGE.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\Docs\api-index\metalnexus-api.md">
+      <Pack>True</Pack>
+      <PackagePath>docs\</PackagePath>
+    </None>
+  </ItemGroup>
+  
+</Project>

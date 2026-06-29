@@ -1,3 +1,6 @@
+[2026.2.0] - TBD
+- Removed "ILoadLog" and added support ILoggerFactory for bootstrap logging.
+
 [2026.1.1] - 5/17/2026
 - Minor Fixes, additional Unit Tests and documentation.
 

@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <Import Project="..\RossWright.MetalNexus.targets" />
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+  
+  <PropertyGroup>
+    <Description>Blazor WebAssembly client integration for MetalNexus, including AddMetalNexusClient, HTTP request dispatch through MetalChain, authenticated client support, direct URL helpers, and file upload components.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\MetalCore\RossWright.MetalCore.Blazor\RossWright.MetalCore.Blazor.csproj" />
+    <ProjectReference Include="..\..\MetalGuardian\RossWright.MetalGuardian.Abstractions\RossWright.MetalGuardian.Abstractions.csproj" />
+    <ProjectReference Include="..\RossWright.MetalNexus\RossWright.MetalNexus.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="wwwroot\Interop.test.js" />
+    <Content Remove="wwwroot\package-lock.json" />
+    <Content Remove="wwwroot\package.json" />
+    <Content Remove="wwwroot\vitest.config.js" />
+    <StaticWebAsset Remove="wwwroot\Interop.test.js" />
+    <StaticWebAsset Remove="wwwroot\package-lock.json" />
+    <StaticWebAsset Remove="wwwroot\package.json" />
+    <StaticWebAsset Remove="wwwroot\vitest.config.js" />
+    <None Include="wwwroot\Interop.test.js" Pack="false" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
+    <None Include="wwwroot\package-lock.json" Pack="false" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
+    <None Include="wwwroot\package.json" Pack="false" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
+    <None Include="wwwroot\vitest.config.js" Pack="false" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="RossWright.MetalNexus.Blazor.UnitTests" />
+  </ItemGroup>
+
+
+</Project>

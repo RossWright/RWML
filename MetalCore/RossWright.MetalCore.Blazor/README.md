@@ -123,7 +123,7 @@ Or add directly to your project file:
 
 | Package | Purpose |
 |---|---|
-| [`RossWright.MetalCore`](https://www.nuget.org/packages/RossWright.MetalCore) | Core extensions, utilities, options builders, load logging, exceptions, signing |
+| [`RossWright.MetalCore`](https://www.nuget.org/packages/RossWright.MetalCore) | Core extensions, utilities, options builders, bootstrap logging infrastructure, exceptions, signing |
 | [`RossWright.MetalCore.Data`](https://www.nuget.org/packages/RossWright.MetalCore.Data) | Entity Framework extensions, GeoCoder, database timing interceptor |
 | [`RossWright.MetalCore.Server`](https://www.nuget.org/packages/RossWright.MetalCore.Server) | ASP.NET Core messaging contracts, SMTP email service |
 | [`RossWright.MetalCore.Populi`](https://www.nuget.org/packages/RossWright.MetalCore.Populi) | Zero-dependency test-data generator: names, addresses, emails, coordinates, dates, prices, and lorem ipsum |

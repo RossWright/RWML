@@ -4,6 +4,8 @@ Copyright (c) 2023-2026 Pross Co.
 ## Table of Contents
 
 - [Overview](#overview)
+- [Namespaces](#namespaces)
+- [Common APIs](#common-apis)
 - [String Extensions](#string-extensions)
 - [Collection Extensions](#collection-extensions)
 - [Numeric & Temporal Extensions](#numeric--temporal-extensions)
@@ -12,13 +14,13 @@ Copyright (c) 2023-2026 Pross Co.
 - [Validation](#validation)
 - [DI & Service Collection Extensions](#di--service-collection-extensions)
 - [Options Builders](#options-builders)
-- [Load Log](#load-log)
+- [Bootstrap Logging](#bootstrap-logging)
 - [Utilities](#utilities)
 - [Signing](#signing)
 - [Installation](#installation)
 - [See Also](#see-also)
 - [License](#license)
-- [Changelog](CHANGELOG.md)
+- [Changelog](CHANGELOG.txt)
 
 ---
 
@@ -28,13 +30,43 @@ MetalCore is a collection of foundational utilities shared across all Ross Wrigh
 
 | Package | Purpose |
 |---|---|
-| `RossWright.MetalCore` | Core extensions, utilities, options builders, load logging, exceptions, signing |
+| `RossWright.MetalCore` | Core extensions, utilities, options builders, bootstrap logging infrastructure, exceptions, signing |
 | `RossWright.MetalCore.Server` | ASP.NET Core messaging contracts, SMTP, and `WebApplicationBuilder` helpers |
 | `RossWright.MetalCore.Data` | Entity Framework Core extensions, RefreshTable, GeoCoder, timing interceptor |
 | `RossWright.MetalCore.Blazor` | Blazor/WASM services and `WebAssemblyHostBuilder` helpers |
 | `RossWright.MetalCore.Populi` | Zero-dependency static test-data generator: names, addresses, emails, coordinates, dates, prices, and lorem ipsum |
 
 All extension methods live in the `RossWright` namespace (global-usings friendly). Messaging types live in `RossWright.Messaging`.
+
+---
+
+## Namespaces
+
+Most MetalCore extension methods are available from:
+
+```csharp
+using RossWright;
+```
+
+Messaging contracts are available from:
+
+```csharp
+using RossWright.Messaging;
+```
+
+---
+
+## Common APIs
+
+| Task | API | Namespace |
+|---|---|---|
+| Compare strings by normalized Levenshtein similarity | `string?.CalcLevenshteinDistanceTo(string?)` | `RossWright` |
+| Convert identifiers to readable labels | `string.SpaceOut()` | `RossWright` |
+| Apply optional LINQ filters | `IQueryable<T>.WhereIf(...)` / `IEnumerable<T>.WhereIf(...)` | `RossWright` |
+| Copy DTO values between objects | `source.CopyTo(target)` | `RossWright` |
+| Clone compatible DTOs | `source.CloneAs<T>()` | `RossWright` |
+| Validate models that implement `IValidatable` | `model.AssertValid()` / `model.IsValid()` | `RossWright` |
+| Register bootstrap logging | `IUsesBootstrapLoggerOptionsBuilder` | `RossWright` |
 
 ---
 
@@ -62,6 +94,7 @@ All extension methods live in the `RossWright` namespace (global-usings friendly
 | `IsValidPhoneNumber()` | Returns `true` for a valid 10-digit US phone number (tolerates formatting chars) | `"(555) 123-4567".IsValidPhoneNumber()` → `true` |
 | `ToFormattedPhoneNumber()` | Formats a digit string as `(555) 123-4567`, with optional country code | `"5551234567".ToFormattedPhoneNumber()` → `"(555) 123-4567"` |
 | `ToNormalizedPhoneNumber()` | Normalizes to E.164 format (`+1XXXXXXXXXX`) | `"(555) 123-4567".ToNormalizedPhoneNumber()` → `"+15551234567"` |
+| `CalcLevenshteinDistanceTo(other)` | Calculates a normalized Levenshtein similarity score after trimming, lowercasing, and removing spaces | `"kitten".CalcLevenshteinDistanceTo("sitting")` → `0.57` |
 
 ### `IEnumerable<string>`
 
@@ -373,7 +406,7 @@ See [`RossWright.MetalCore.Data`](../RossWright.MetalCore.Data/README.md#refresh
 
 Many Ross Wright Metal libraries accept a builder callback in their `AddXxx(builder, opts => { ... })` registration call. The callback receives an object implementing `IAssemblyScanningOptionsBuilder`, which instructs the library to scan your assemblies and discover types automatically — no manual wiring of services, handlers, validators, or endpoints.
 
-Libraries that use assembly scanning: **MetalInjection**, **MetalNexus** (client and server), **MetalChain**, and **MetalShout**.
+Libraries that use assembly scanning: **MetalInjection**, **MetalNexus** (client and server), and **MetalChain**.
 
 Choose the `ScanXxx` method that matches your project layout:
 
@@ -389,11 +422,11 @@ builder.AddMetalInjection(opts => {
 });
 ```
 
-### `IUsesLoggerOptionsBuilder`
+### `IUsesBootstrapLoggerOptionsBuilder`
 
 | Member | Description |
 |---|---|
-| `UseLogger(ILoadLog?)` | Attaches an `ILoadLog` for diagnostic output during options setup |
+| `UseBootstrapLogger(ILoggerFactory?)` | Attaches an `ILoggerFactory` for diagnostic output during options setup |
 | `DoNotUseLogger()` | Extension; disables all diagnostic output |
 
 ### `IAssemblyScanningOptionsBuilder`
@@ -428,49 +461,20 @@ public class MyLibraryOptions : OptionsBuilder
 
 ---
 
-## Load Log
+## Bootstrap Logging
 
-The standard `ILogger` pipeline is not available during DI registration — the logging infrastructure hasn't been built yet at that point. `ILoadLog` fills that gap by providing diagnostic output *during app startup*, so library auto-registration can report what it found, skipped, or rejected.
+The standard `ILogger` pipeline is not available during DI registration — logging infrastructure hasn't been built yet at that point. MetalCore provides the plumbing that lets Metal libraries emit diagnostic output *during startup* through a standard `ILoggerFactory`.
 
-Because `IAssemblyScanningOptionsBuilder` inherits `IUsesLoggerOptionsBuilder`, every Metal library that uses assembly scanning automatically supports `UseLogger(...)` and `DoNotUseLogger()`. The affected libraries are **MetalInjection**, **MetalNexus** (client and server), **MetalChain**, and **MetalShout**.
+`MetalConsoleLoggerProvider` is a color-coded, scope-indented console logger you can use as that factory. Register it via `AddMetalConsoleLogger()` on `ILoggingBuilder`. Default minimum level is `LogLevel.Debug` in Debug builds and `LogLevel.Warning` in Release builds.
 
-Three implementations are provided:
+For usage with **MetalInjection**, **MetalChain**, or **MetalNexus**, see the Bootstrap Logging section in each library's own documentation.
 
-- **`ConsoleLoadLog`** — writes color-coded output to the console, one line per entry. `ConsoleLoadLog.Default` is a ready-to-use singleton configured for `LogLevel.Trace` (Debug builds) or `LogLevel.Warning` (Release builds). To customize, construct directly: `new ConsoleLoadLog(minLogLevel, traceColor, warningColor, errorColor)` — all parameters are optional and default to `DarkBlue`/`Yellow`/`Red`.
-- **`ListLoadLog`** — captures all entries in memory; useful for asserting startup behavior in unit tests.
-- **`ThrowExceptionOnLogError`** — wraps an optional inner log and throws `MetalCoreException` if any error (or optionally any warning) is logged; useful for fail-fast startup validation.
-
-```csharp
-builder.AddMetalInjection(opts => {
-    opts.UseLogger(ConsoleLoadLog.Default); // see startup output in console
-    opts.ScanThisAssembly();
-});
-```
-
-For tests, use `opts.UseLogger(new ListLoadLog())` to capture entries, or `opts.DoNotUseLogger()` to suppress all output.
-
-| Type | Description |
+| Type / Member | Description |
 |---|---|
-| `ILoadLog` | Diagnostic logging contract used by option builders; supports scopes and three severity levels |
-| `ILoadLogExtensions` | Null-safe `LogTrace`, `LogWarning`, `LogError` extension helpers on `ILoadLog?` |
-| `ConsoleLoadLog` | Writes to the console with per-level colors; `Default` is a shared pre-configured instance |
-| `ListLoadLog` | Buffers all entries to an in-memory list; useful for capturing diagnostics in tests |
-| `ThrowExceptionOnLogError` | Wraps an optional inner log and throws `MetalCoreException` on errors (or optionally warnings) |
-
-`ListLoadLog.Entries` is a `List<ListLoadLog.Entry>`. Each `Entry` exposes:
-
-| Property | Type | Description |
-|---|---|---|
-| `ScopeLevel` | `int` | Nesting depth at which this entry was logged (incremented by `BeginScope()`) |
-| `Level` | `LogLevel` | Severity: `Trace`, `Warning`, or `Error` |
-| `Message` | `string` | The log message text |
-
-```csharp
-var log = new ListLoadLog();
-opts.UseLogger(log);
-// ... run startup ...
-Assert.Empty(log.Entries.Where(e => e.Level == LogLevel.Error));
-```
+| `MetalConsoleLoggerProvider` | `ILoggerProvider` that creates color-coded, scope-indented console loggers |
+| `MetalConsoleLoggerExtensions.AddMetalConsoleLogger(...)` | Registers `MetalConsoleLoggerProvider` with an `ILoggingBuilder` |
+| `IUsesBootstrapLoggerOptionsBuilder.UseBootstrapLogger(factory)` | Attaches any `ILoggerFactory` for startup diagnostics; implemented by all scanning-based Metal builders |
+| `IUsesBootstrapLoggerOptionsBuilderExtensions.DoNotUseLogger(builder)` | Suppresses all startup diagnostic output |
 
 ---
 

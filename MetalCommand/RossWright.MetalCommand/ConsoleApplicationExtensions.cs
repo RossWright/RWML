@@ -65,7 +65,10 @@ public static class ConsoleApplicationExtensions
     /// the extension <c>.mcc.json</c> is appended automatically if the exact path is not found.
     /// If neither path exists a warning is printed and the application starts with an empty context.
     /// </summary>
+    /// <param name="builder">The configured application builder.</param>
     /// <param name="name">File name or path. Defaults to <c>"default"</c>.</param>
+    /// <param name="showWarnIfMissing">Whether to print a warning when no context file is found.</param>
+    /// <returns>The same <paramref name="builder"/> for chaining.</returns>
     public static IConsoleApplicationBuilder LoadContext(
         this IConsoleApplicationBuilder builder,
         string name = "default", bool showWarnIfMissing = true)

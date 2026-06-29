@@ -105,9 +105,14 @@ public static class CloneAsExtensions
     public static T CloneAs<T>(this object copyFromObject, Action<T>? init = null)
     {
         var clone = CreateInstance<T>(copyFromObject);
+        if (clone is null)
+        {
+            throw new InvalidOperationException(
+                $"No instance could be created for destination type '{typeof(T).Name}'.");
+        }
         copyFromObject.CopyTo(clone);
         init?.Invoke(clone);
-        return clone!;
+        return clone;
     }
 
     /// <summary>

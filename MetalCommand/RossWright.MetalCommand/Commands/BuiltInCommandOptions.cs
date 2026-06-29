@@ -3,7 +3,7 @@ namespace RossWright.MetalCommand;
 /// <summary>
 /// Invocation customization options for the commands that are built into every
 /// <see cref="ConsoleApplication"/>. All five commands are registered automatically;
-/// use <see cref="IConsoleApplicationBuilderExtensions.CustomizeBuiltInCommands"/> to
+/// use <see cref="ConsoleApplicationExtensions.CustomizeBuiltInCommands"/> to
 /// override their invocation tokens.
 /// </summary>
 public sealed class BuiltInCommandOptions

@@ -9,7 +9,7 @@ Copyright (c) 2023-2026 Pross Co.
 - [`SetupAssemblyWithTypes`](#setupassemblywithtypes)
 - [See Also](#see-also)
 - [License](#license)
-- [Changelog](CHANGELOG.md)
+- [Changelog](CHANGELOG.txt)
 
 ---
 
@@ -83,7 +83,7 @@ Assert.Contains(typeof(MyService), types);
 
 | Package | Purpose |
 |---|---|
-| [`RossWright.MetalCore`](../RossWright.MetalCore/README.md) | Core extensions, utilities, options builders, load logging, exceptions, signing |
+| [`RossWright.MetalCore`](../RossWright.MetalCore/README.md) | Core extensions, utilities, options builders, bootstrap logging infrastructure, exceptions, signing |
 | [`RossWright.MetalCore.Data`](../RossWright.MetalCore.Data/README.md) | Entity Framework extensions, GeoCoder, database timing interceptor |
 | [`RossWright.MetalCore.Blazor`](../RossWright.MetalCore.Blazor/README.md) | Blazor WebAssembly services: local storage, JS script loader |
 | [`RossWright.MetalCore.Server`](../RossWright.MetalCore.Server/README.md) | ASP.NET Core messaging contracts, SMTP email, `WebApplicationBuilder` helpers |

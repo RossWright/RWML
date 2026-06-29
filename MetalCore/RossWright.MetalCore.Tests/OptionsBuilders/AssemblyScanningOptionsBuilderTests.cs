@@ -1,4 +1,5 @@
 using System.Reflection;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 
 namespace RossWright;
@@ -149,9 +150,12 @@ public class AssemblyScanningOptionsBuilderTests
     {
         var builder = new AssemblyScanningOptionsBuilder("test");
         var mockAssembly = Substitute.For<Assembly>();
-        var mockLog = Substitute.For<ILoadLog>();
-        builder.UseLogger(mockLog);
-        
+        var capturedMessages = new List<(LogLevel Level, string Message)>();
+        var mockLog = new CapturingLogger(capturedMessages);
+        var mockLoggerFactory = Substitute.For<ILoggerFactory>();
+        mockLoggerFactory.CreateLogger(Arg.Any<string>()).Returns(mockLog);
+        builder.UseBootstrapLogger(mockLoggerFactory);
+
         mockAssembly.GetTypes().Returns(_ => throw new InvalidOperationException("Assembly cannot be loaded"));
         mockAssembly.FullName.Returns("TestAssembly, Version=1.0.0.0");
 
@@ -159,9 +163,10 @@ public class AssemblyScanningOptionsBuilderTests
         var types = builder.DiscoveredConcreteTypes;
 
         types.ShouldBeEmpty();
-        mockLog.Received(1).LogWarning(Arg.Is<string>(s => 
-            s.Contains("Could not load types from assembly") && 
-            s.Contains("TestAssembly")));
+        capturedMessages.ShouldContain(e =>
+            e.Level == LogLevel.Warning &&
+            e.Message.Contains("Could not load types from assembly") &&
+            e.Message.Contains("TestAssembly"));
     }
 
     [Fact]
@@ -174,4 +179,12 @@ public class AssemblyScanningOptionsBuilderTests
 
         builder.DiscoveredConcreteTypes.ShouldBeSameAs(customTypes);
     }
+}
+
+file sealed class CapturingLogger(List<(LogLevel Level, string Message)> entries) : ILogger
+{
+    public bool IsEnabled(LogLevel logLevel) => true;
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        => entries.Add((logLevel, formatter(state, exception)));
 }

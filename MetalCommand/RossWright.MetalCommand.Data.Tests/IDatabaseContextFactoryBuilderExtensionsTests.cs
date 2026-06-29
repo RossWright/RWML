@@ -300,6 +300,7 @@ public class IDatabaseContextFactoryBuilderExtensionsTests
         builder.Received(1).Add(environment, Arg.Any<Action<DbContextOptionsBuilder>>(), isDefault: true, isProtected: true);
     }
 
+#if !NET10_0
     [Fact]
     public void AddMySqlDefault_CallsAddMySql_WithDefaultTrue()
     {
@@ -593,4 +594,5 @@ public class IDatabaseContextFactoryBuilderExtensionsTests
         // Assert
         builder.Received(1).Add(environment, Arg.Any<Action<DbContextOptionsBuilder>>(), isDefault: true, isProtected: true);
     }
+#endif
 }

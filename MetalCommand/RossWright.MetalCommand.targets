@@ -4,6 +4,7 @@
 	<PropertyGroup>
 		<Title>MetalCommand by Ross Wright</Title>
 		<Product>MetalCommand</Product>
+    <Description>Interactive .NET console application framework with command discovery, argument binding, dependency injection, middleware, progress output, EF Core database tooling, environment-aware HTTP clients, and a REPL host.</Description>
 	</PropertyGroup>
 
   <PropertyGroup>
@@ -18,6 +19,14 @@
     <None Include="$(MSBuildThisFileDirectory)CHANGELOG.txt">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)AI-USAGE.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\Docs\api-index\metalcommand-api.md">
+      <Pack>True</Pack>
+      <PackagePath>docs\</PackagePath>
     </None>
   </ItemGroup>
 

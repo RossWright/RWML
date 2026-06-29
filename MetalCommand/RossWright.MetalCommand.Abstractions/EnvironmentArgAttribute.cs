@@ -3,7 +3,7 @@ namespace RossWright.MetalCommand;
 /// <summary>
 /// Declares a property on an <see cref="ICommand"/> class as the environment selector argument.
 /// The framework binds the resolved environment name to the property before calling
-/// <c>ExecuteAsync</c>, then <see cref="EnvironmentArgMiddleware"/> enforces the declared
+/// <c>ExecuteAsync</c>, then the MetalCommand environment middleware enforces the declared
 /// <see cref="EnvironmentPolicy"/> before execution proceeds.
 /// </summary>
 /// <remarks>

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>RossWright.MetalNexus.Testbed.Console</RootNamespace>
+    <AssemblyName>RossWright.MetalNexus.Testbed.Console</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RossWright.MetalNexus\RossWright.MetalNexus.csproj" />
+    <ProjectReference Include="..\..\MetalCommand\RossWright.MetalCommand\RossWright.MetalCommand.csproj" />
+    <ProjectReference Include="..\RossWright.MetalNexus.Testbed.Shared\RossWright.MetalNexus.Testbed.Shared.csproj" />
+    <ProjectReference Include="..\..\MetalInjection\RossWright.MetalInjection\RossWright.MetalInjection.csproj" />
+  </ItemGroup>
+
+</Project>

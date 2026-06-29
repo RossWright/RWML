@@ -77,6 +77,9 @@ public class ConsoleApplication : ICommandExecutor
         Console.WriteLine($"Found {commandCount} commands. Type \"Help\" to get help.", IntroOutroColor);
     }
     private readonly IDictionary<string, CommandExecutor> _commandExecutorsByInvocation;
+    /// <summary>
+    /// Session-scoped key/value data shared by commands during the current console run.
+    /// </summary>
     public IDictionary<string, string> Context { get; } = new Dictionary<string, string>();
     internal IReadOnlyList<Type> MiddlewareTypes { get; }
     internal Func<IDictionary<string, string>, string>? MakePrompt { get; set; }
@@ -85,6 +88,11 @@ public class ConsoleApplication : ICommandExecutor
     internal ConsoleColor? IntroOutroColor { get; set; } = ConsoleColor.DarkGray;
     internal ConsoleColor? WarningColor { get; set; } = ConsoleColor.Yellow;
 
+    /// <summary>
+    /// Executes a single command invocation programmatically with the supplied arguments.
+    /// </summary>
+    /// <param name="invocation">The command invocation token to execute.</param>
+    /// <param name="args">The command arguments.</param>
     public async Task Execute(string invocation, params string[] args)
     {
         if (_commandExecutorsByInvocation.TryGetValue(invocation.ToLower(), out var commandExecutor))
@@ -100,12 +108,19 @@ public class ConsoleApplication : ICommandExecutor
         }
     }
 
+    /// <summary>The console abstraction used for input and output.</summary>
     public IConsole Console { get; }
+    /// <summary>The application service provider used to resolve commands and dependencies.</summary>
     public IServiceProvider Services { get; }
+    /// <summary>The application configuration loaded by the builder.</summary>
     public IConfiguration Configuration { get; internal set; } = null!;
 
     private CancellationTokenSource _currentCommandCancellationTokenSource = new();
 
+    /// <summary>
+    /// Starts the interactive command loop, optionally with an initial command supplied as arguments.
+    /// </summary>
+    /// <param name="args">Optional startup arguments or initial command text.</param>
     public async Task RunAsync(params string[] args)
     {
         Directory.SetCurrentDirectory(AppContext.BaseDirectory);

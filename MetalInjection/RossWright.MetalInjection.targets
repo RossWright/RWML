@@ -5,7 +5,7 @@
 	<PropertyGroup>
 		<Title>MetalInjection by Ross Wright</Title>
 		<Product>MetalInjection</Product>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>Attribute- and interface-driven dependency injection container with property injection, configuration binding, open generics, keyed services, hosted-service registration, and ASP.NET Core and Blazor WebAssembly integration.</Description>
   </PropertyGroup>
   
   <PropertyGroup>
@@ -20,6 +20,14 @@
     <None Include="$(MSBuildThisFileDirectory)CHANGELOG.txt">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)AI-USAGE.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)..\Docs\api-index\metalinjection-api.md">
+      <Pack>True</Pack>
+      <PackagePath>docs\</PackagePath>
     </None>
   </ItemGroup>
   

@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace RossWright.MetalCommand.Data.Tests;
 
+#if !NET10_0
 public class MySqlExtensionsTests
 {
     private sealed class SpyBuilder : IDatabaseContextFactoryBuilder
@@ -74,3 +75,4 @@ public class MySqlExtensionsTests
         builder.CapturedIsProtected.ShouldBeTrue();
     }
 }
+#endif

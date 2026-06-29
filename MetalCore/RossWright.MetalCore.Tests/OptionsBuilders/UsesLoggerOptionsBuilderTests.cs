@@ -1,82 +1,83 @@
-﻿using NSubstitute;
+﻿using Microsoft.Extensions.Logging;
+using NSubstitute;
 
 namespace RossWright;
 
 public class UsesLoggerOptionsBuilderTests
 {
     [Fact]
-    public void UseLogger_SetsLoadLog()
+    public void UseLogger_SetsLoggerFactory()
     {
         // Arrange
-        var builder = new UsesLoggerOptionsBuilder("test");
-        var loadLog = Substitute.For<ILoadLog>();
+        var builder = new UsesBootstrapLoggerOptionsBuilder("test");
+        var loggerFactory = Substitute.For<ILoggerFactory>();
 
         // Act
-        builder.UseLogger(loadLog);
+        builder.UseBootstrapLogger(loggerFactory);
 
         // Assert
-        builder.LoadLog.ShouldBe(loadLog);
+        builder.GetBootstrapLogger();
+        loggerFactory.Received(1).CreateLogger("test");
     }
 
     [Fact]
-    public void UseLogger_WithNull_SetsLoadLogToNull()
+    public void UseLogger_WithNull_ReturnsNullBootstrapLogger()
     {
         // Arrange
-        var builder = new UsesLoggerOptionsBuilder("test");
-        var loadLog = Substitute.For<ILoadLog>();
-        builder.UseLogger(loadLog);
+        var builder = new UsesBootstrapLoggerOptionsBuilder("test");
+        var loggerFactory = Substitute.For<ILoggerFactory>();
+        builder.UseBootstrapLogger(loggerFactory);
 
         // Act
-        builder.UseLogger(null);
+        builder.UseBootstrapLogger(null);
 
         // Assert
-        builder.LoadLog.ShouldBeNull();
+        builder.GetBootstrapLogger().ShouldBeNull();
     }
 
     [Fact]
-    public void UseLogger_WithNonNullLoadLog_LoadLogPropertySetsModuleName()
+    public void GetBootstrapLogger_UsesCategory()
     {
         // Arrange
         var moduleName = "TestModule";
-        var builder = new UsesLoggerOptionsBuilder(moduleName);
-        var loadLog = Substitute.For<ILoadLog>();
+        var builder = new UsesBootstrapLoggerOptionsBuilder(moduleName);
+        var loggerFactory = Substitute.For<ILoggerFactory>();
 
         // Act
-        builder.UseLogger(loadLog);
-        var result = builder.LoadLog;
+        builder.UseBootstrapLogger(loggerFactory);
+        builder.GetBootstrapLogger();
 
         // Assert
-        result.ShouldBe(loadLog);
-        loadLog.Received(1).ModuleName = moduleName;
+        loggerFactory.Received(1).CreateLogger(moduleName);
     }
 
     [Fact]
-    public void DoNotUseLogger_SetsLoadLogToNull()
+    public void DoNotUseLogger_ReturnsNullBootstrapLogger()
     {
         // Arrange
-        var builder = new UsesLoggerOptionsBuilder("test");
-        var loadLog = Substitute.For<ILoadLog>();
-        builder.UseLogger(loadLog);
+        var builder = new UsesBootstrapLoggerOptionsBuilder("test");
+        var loggerFactory = Substitute.For<ILoggerFactory>();
+        builder.UseBootstrapLogger(loggerFactory);
 
         // Act
         builder.DoNotUseLogger();
 
         // Assert
-        builder.LoadLog.ShouldBeNull();
+        builder.GetBootstrapLogger().ShouldBeNull();
     }
 
     [Fact]
-    public void DoNotUseLogger_CalledDirectly_SetsLoadLogToNull()
+    public void DoNotUseLogger_CalledDirectly_ReturnsNullBootstrapLogger()
     {
         // Arrange
-        IUsesLoggerOptionsBuilder builder = new UsesLoggerOptionsBuilder("test");
-        var loadLog = Substitute.For<ILoadLog>();
-        builder.UseLogger(loadLog);
+        IUsesBootstrapLoggerOptionsBuilder builder = new UsesBootstrapLoggerOptionsBuilder("test");
+        var loggerFactory = Substitute.For<ILoggerFactory>();
+        builder.UseBootstrapLogger(loggerFactory);
 
         // Act
-        IUsesLoggerOptionsBuilderExtensions.DoNotUseLogger(builder);
+        IUsesBootstrapLoggerOptionsBuilderExtensions.DoNotUseLogger(builder);
 
         // Assert
-        builder.LoadLog.ShouldBeNull();
+        builder.GetBootstrapLogger().ShouldBeNull();
     }
 }

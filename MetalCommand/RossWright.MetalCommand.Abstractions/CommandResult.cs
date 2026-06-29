@@ -77,7 +77,7 @@ public readonly record struct CommandResult
     /// <summary>
     /// Implicitly converts a <see langword="bool"/> to a <see cref="CommandResult"/>:
     /// <see langword="true"/> maps to <see cref="Ok"/>, <see langword="false"/> to
-    /// <see cref="Fail()"/>.
+    /// <see cref="Fail"/>.
     /// </summary>
     public static implicit operator CommandResult(bool success) =>
         success ? Ok() : Fail();

@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\RossWright.MetalNexus.targets" />
+
+	<PropertyGroup>
+    <Description>Shared MetalNexus attributes and contracts for defining API request types, endpoint schemas, upload metadata, HTTP behavior, authentication metadata, and client/server-neutral request models.</Description>
+	</PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.13" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.3" />
+  </ItemGroup>
+  
+	<ItemGroup>
+    <ProjectReference Include="..\..\MetalChain\RossWright.MetalChain.Abstractions\RossWright.MetalChain.Abstractions.csproj" />
+    <ProjectReference Include="..\..\MetalCore\RossWright.MetalCore\RossWright.MetalCore.csproj" />
+	</ItemGroup>
+  
+	<ItemGroup>
+	  <InternalsVisibleTo Include="RossWright.MetalNexus.Abstractions.UnitTests" />
+	</ItemGroup>
+
+</Project>

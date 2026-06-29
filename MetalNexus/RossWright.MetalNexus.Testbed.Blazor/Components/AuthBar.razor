@@ -1,0 +1,67 @@
+@inject TokenService TokenService
+@inject HttpClient Http
+@inject ILogger<AuthBar> Logger
+
+<div class="auth-bar">
+    <select value="@_selected" @onchange="OnUserChanged">
+        <option value="unauthenticated">— unauthenticated —</option>
+        <option value="admin">admin (Admin)</option>
+        <option value="manager">manager (Manager)</option>
+        <option value="readonly">readonly (ReadOnly)</option>
+    </select>
+    <span class="auth-status @(_statusClass)">@_statusText</span>
+</div>
+
+@code {
+    private string _selected = "unauthenticated";
+    private string _statusText = "No token";
+    private string _statusClass = "none";
+
+    private static readonly Dictionary<string, string> Passwords = new()
+    {
+        ["admin"]    = "admin",
+        ["manager"]  = "manager",
+        ["readonly"] = "readonly",
+    };
+
+    private async Task OnUserChanged(ChangeEventArgs e)
+    {
+        _selected = e.Value?.ToString() ?? "unauthenticated";
+
+        if (_selected == "unauthenticated")
+        {
+            TokenService.ClearToken();
+            _statusText = "No token";
+            _statusClass = "none";
+            return;
+        }
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("/auth/token", new
+            {
+                username = _selected,
+                password = Passwords[_selected]
+            });
+
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadFromJsonAsync<TokenResponse>();
+            if (result?.Token is { Length: > 0 } token)
+            {
+                TokenService.SetToken(_selected, token);
+                _statusText = $"✓ {_selected}";
+                _statusClass = "ok";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Token fetch failed for {User}", _selected);
+            TokenService.ClearToken();
+            _statusText = "Auth failed";
+            _statusClass = "err";
+        }
+    }
+
+    private sealed record TokenResponse(string Token);
+}

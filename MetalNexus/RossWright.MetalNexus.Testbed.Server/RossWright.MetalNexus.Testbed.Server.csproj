@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>RossWright.MetalNexus.Testbed.Server</RootNamespace>
+    <AssemblyName>RossWright.MetalNexus.Testbed.Server</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.3" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.12.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RossWright.MetalNexus.Server\RossWright.MetalNexus.Server.csproj" />
+    <ProjectReference Include="..\RossWright.MetalNexus.Testbed.Shared\RossWright.MetalNexus.Testbed.Shared.csproj" />
+    <ProjectReference Include="..\..\MetalInjection\RossWright.MetalInjection.Server\RossWright.MetalInjection.Server.csproj" />
+  </ItemGroup>
+
+</Project>

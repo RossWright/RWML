@@ -233,7 +233,7 @@ var title   = Populi.NextWords(4);     // "mountain silver narrow bridge"
 
 | Package | Purpose |
 |---|---|
-| [`RossWright.MetalCore`](../RossWright.MetalCore/README.md) | Core extensions, utilities, options builders, load logging, exceptions, signing |
+| [`RossWright.MetalCore`](../RossWright.MetalCore/README.md) | Core extensions, utilities, options builders, bootstrap logging infrastructure, exceptions, signing |
 | [`RossWright.MetalCore.Data`](../RossWright.MetalCore.Data/README.md) | Entity Framework extensions, GeoCoder, database timing interceptor |
 | [`RossWright.MetalCore.Blazor`](../RossWright.MetalCore.Blazor/README.md) | Blazor WebAssembly services: local storage, JS script loader |
 | [`RossWright.MetalCore.Server`](../RossWright.MetalCore.Server/README.md) | ASP.NET Core messaging contracts, SMTP email, `WebApplicationBuilder` helpers |

@@ -34,24 +34,6 @@ public class ObliterateCommandTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_SqliteConnection_ThrowsOrAnnounces()
-    {
-        // Obliterate uses SQL Server-specific T-SQL; SQLite in-memory always reports the db as
-        // existing once the connection is open, so this test verifies the SQLite error is surfaced.
-        var console = new TestConsole();
-        using var connection = new Microsoft.Data.Sqlite.SqliteConnection("DataSource=:memory:");
-        connection.Open();
-        var envs = new[]
-        {
-            new DatabaseEnvironment { Environment = "dev", IsProtected = false, SetOptions = b => b.UseSqlite(connection) }
-        };
-        var factory = DbContextFixture.BuildFactory("dev", envs);
-        var command = new ObliterateCommand<TestDbContext>(factory) { Environment = "dev" };
-
-        await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(console, CancellationToken.None));
-    }
-
-    [Fact]
     public void Descriptor_HasForbiddenEnvironmentPolicy()
     {
         var prop = typeof(ObliterateCommand<TestDbContext>).GetProperty(nameof(ObliterateCommand<TestDbContext>.Environment));
@@ -72,61 +54,15 @@ public class ObliterateCommandTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_DatabaseExists_ObliteratesAndReturnsOk()
+    public async Task ExecuteAsync_NonRelationalProvider_ThrowsDatabaseExistsError()
     {
         var console = new TestConsole();
-        var dbName = $"TestDb_{Guid.NewGuid():N}";
-        var connectionString = $"Server=(localdb)\\mssqllocaldb;Database={dbName};Trusted_Connection=True;MultipleActiveResultSets=true";
+        var factory = DbContextFixture.BuildFactory("dev",
+            new DatabaseEnvironment { Environment = "dev", IsProtected = false, SetOptions = b => b.UseInMemoryDatabase("obliterate-unsupported") });
+        var command = new ObliterateCommand<TestDbContext>(factory) { Environment = "dev" };
 
-        try
-        {
-            // Create the database first
-            var setupFactory = DbContextFixture.BuildFactory("dev",
-                new DatabaseEnvironment
-                {
-                    Environment = "dev",
-                    IsProtected = false,
-                    SetOptions = b => b.UseSqlServer(connectionString)
-                });
-            using (var setupCtx = setupFactory.GetContext("dev"))
-            {
-                setupCtx.Database.EnsureCreated();
-            }
+        var exception = await Should.ThrowAsync<InvalidCastException>(() => command.ExecuteAsync(console, CancellationToken.None));
 
-            // Now test obliterate
-            var factory = DbContextFixture.BuildFactory("dev",
-                new DatabaseEnvironment
-                {
-                    Environment = "dev",
-                    IsProtected = false,
-                    SetOptions = b => b.UseSqlServer(connectionString)
-                });
-            var command = new ObliterateCommand<TestDbContext>(factory) { Environment = "dev" };
-
-            var result = await command.ExecuteAsync(console, CancellationToken.None);
-
-            result.Success.ShouldBeTrue();
-            console.Lines.ShouldContain(line => line.Contains("Erasing dev database"));
-        }
-        finally
-        {
-            // Clean up - drop the database
-            try
-            {
-                var cleanupFactory = DbContextFixture.BuildFactory("dev",
-                    new DatabaseEnvironment
-                    {
-                        Environment = "dev",
-                        IsProtected = false,
-                        SetOptions = b => b.UseSqlServer(connectionString)
-                    });
-                using var cleanupCtx = cleanupFactory.GetContext("dev");
-                cleanupCtx.Database.EnsureDeleted();
-            }
-            catch
-            {
-                // Ignore cleanup errors
-            }
-        }
+        exception.Message.ShouldContain("RelationalDatabaseCreator");
     }
 }

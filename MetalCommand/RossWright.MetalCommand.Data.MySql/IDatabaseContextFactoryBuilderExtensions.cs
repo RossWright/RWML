@@ -6,7 +6,7 @@ namespace RossWright.MetalCommand.Data;
 
 /// <summary>
 /// Provides access to the underlying <see cref="DbContextOptionsBuilder"/> and
-/// <see cref="MySqlDbContextOptionsBuilder"/> within an <see cref="AddMySql"/> callback.
+/// <see cref="MySqlDbContextOptionsBuilder"/> within an <c>AddMySql</c> callback.
 /// </summary>
 public interface IMySqlConnectionBuilder
 {
@@ -122,6 +122,11 @@ public static class IDatabaseContextFactoryBuilderExtensions
         builder.AddMySql(environment, connectionString, mySqlOptsBuilder, isDefault, isProtected);
     }
 
+    /// <summary>Registers a configuration-backed MySQL environment as the default (non-protected).</summary>
+    /// <param name="builder">The factory builder.</param>
+    /// <param name="environment">The environment name.</param>
+    /// <param name="connectionString">The key under <c>ConnectionStrings</c> in configuration.</param>
+    /// <param name="opts">Optional delegate for additional MySQL/EF options.</param>
     public static void AddMySqlDefaultByConfigurationName(
         this IDatabaseContextFactoryBuilder builder,
         string environment,
@@ -129,6 +134,11 @@ public static class IDatabaseContextFactoryBuilderExtensions
         Action<IMySqlConnectionBuilder>? opts = null) =>
         builder.AddMySqlByConfigurationName(environment, connectionString, opts, isDefault: true, isProtected: false);
 
+    /// <summary>Registers a configuration-backed MySQL environment as protected (non-default).</summary>
+    /// <param name="builder">The factory builder.</param>
+    /// <param name="environment">The environment name.</param>
+    /// <param name="connectionString">The key under <c>ConnectionStrings</c> in configuration.</param>
+    /// <param name="opts">Optional delegate for additional MySQL/EF options.</param>
     public static void AddMySqlProtectedByConfigurationName(
         this IDatabaseContextFactoryBuilder builder,
         string environment,
@@ -136,6 +146,11 @@ public static class IDatabaseContextFactoryBuilderExtensions
         Action<IMySqlConnectionBuilder>? opts = null) =>
         builder.AddMySqlByConfigurationName(environment, connectionString, opts, isDefault: false, isProtected: true);
 
+    /// <summary>Registers a configuration-backed MySQL environment as both default and protected.</summary>
+    /// <param name="builder">The factory builder.</param>
+    /// <param name="environment">The environment name.</param>
+    /// <param name="connectionString">The key under <c>ConnectionStrings</c> in configuration.</param>
+    /// <param name="opts">Optional delegate for additional MySQL/EF options.</param>
     public static void AddMySqlDefaultProtectedByConfigurationName(
         this IDatabaseContextFactoryBuilder builder,
         string environment,

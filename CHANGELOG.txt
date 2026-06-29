@@ -1,4 +1,12 @@
-﻿[2026.1.1] - 5/17/2026
+[2026.2.0] - TBD
+- MetalCommand - Added Logging to console app builder.
+- MetalCore - Removed "ILoadLog" and added support ILoggerFactory for bootstrap logging.
+- MetalChain - Removed "ILoadLog" and added support ILoggerFactory for bootstrap logging.
+- MetalInjection - Removed "ILoadLog" and added support ILoggerFactory for bootstrap logging.
+- MetalNexus - Initial public release.
+- MetalGuardian - Initial public release.
+
+[2026.1.1] - 5/17/2026
 - MetalCore - Minor Fixes, additional Unit Tests and documentation.
 
 [2026.1.0] - 5/13/2026

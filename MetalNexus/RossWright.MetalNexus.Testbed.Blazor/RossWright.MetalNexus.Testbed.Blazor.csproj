@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>RossWright.MetalNexus.Testbed.Blazor</RootNamespace>
+    <AssemblyName>RossWright.MetalNexus.Testbed.Blazor</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RossWright.MetalNexus.Blazor\RossWright.MetalNexus.Blazor.csproj" />
+    <ProjectReference Include="..\RossWright.MetalNexus.Testbed.Shared\RossWright.MetalNexus.Testbed.Shared.csproj" />
+    <ProjectReference Include="..\..\MetalInjection\RossWright.MetalInjection.Blazor\RossWright.MetalInjection.Blazor.csproj" />
+  </ItemGroup>
+
+</Project>

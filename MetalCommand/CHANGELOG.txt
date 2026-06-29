@@ -1,3 +1,6 @@
+[2026.2.0] - TBD
+- Added Logging to console app builder.
+
 [2026.1.1] - 5/17/2026
 - No change: RWML version number synchronization
 

@@ -3,6 +3,8 @@ Copyright (c) 2023-2026 Pross Co.
 
 ## Table of Contents
 - [Introduction](#introduction)
+- [Namespaces](#namespaces)
+- [Common APIs](#common-apis)
 - [Installation](#installation)
 - [Defining Requests](#defining-requests)
 - [Implementing Handlers](#implementing-handlers)
@@ -22,8 +24,9 @@ Copyright (c) 2023-2026 Pross Co.
   - [Open Generic Requests and Handlers](#open-generic-requests-and-handlers)
   - [Conditional Dispatch: HasHandlerFor / HasListenerFor](#conditional-dispatch-hashandlerfor--haslistenerfor)
   - [DI Scope Per Send](#di-scope-per-send)
+  - [Bootstrap Logging](#bootstrap-logging)
 - [License](#license)
-- [Changelog](CHANGELOG.md)
+- [Changelog](CHANGELOG.txt)
 
 ## Introduction
 MetalChain is a lightweight, type-safe mediator-pattern-like library for asynchronously dispatching requests to handlers. 
@@ -50,7 +53,6 @@ All four defaults can be adjusted — see [Esoterica → Unhandled Requests](#un
 MetalChain is a base technology upon which much of the Metal suite of libraries is built upon, including:
 - [MetalNexus](https://www.nuget.org/packages/rosswright.metalnexus) - send a MetalChain request on your client and handle it on your server with minimal setup.
 - [MetalGuardian](https://www.nuget.org/packages/rosswright.metalguardian) - includes MetalChain/MetalNexus hooks to make implementing authentication and authorization for your API effortless
-- [MetalShout](https://www.nuget.org/packages/rosswright.metalshout) - send a MetalChain request from your server and handle it on your clients with minimal setup.
 
 ---
 
@@ -493,6 +495,29 @@ Each call to `Send` (in any overload) resolves its handlers in a **newly created
 - Handlers are never shared across concurrent or sequential `Send` calls.
 - The scope is disposed when the handler returns.
 
+### Bootstrap Logging
+
+`AddMetalChain` supports startup-time diagnostic logging via `UseBootstrapLogger`. Because the standard `ILogger` pipeline isn't available during DI registration, you supply an `ILoggerFactory` before the container is built. MetalChain uses it to report which handlers were found, skipped, or rejected during assembly scanning.
+
+To enable console output during startup, use `AddMetalConsoleLogger` from `RossWright.MetalCore`:
+
+```csharp
+builder.Services.AddMetalChain(options =>
+{
+    options.UseBootstrapLogger(logging =>
+    {
+        logging.ClearProviders();
+        logging.AddMetalConsoleLogger();
+        logging.AddDebug();
+        logging.SetMinimumLevel(LogLevel.Debug);
+    });
+    options.ScanThisAssembly();
+});
+```
+
+Call `options.DoNotUseLogger()` to suppress all bootstrap output (the default in Release builds if no factory is supplied).
+
+---
 ## License
 
 All **Ross Wright Metal Libraries** including this one are licensed under **Apache License 2.0 with Commons Clause**.
