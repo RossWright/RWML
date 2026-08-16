@@ -21,6 +21,8 @@ Copyright (c) 2023-2026 Pross Co.
 
 The **Ross Wright Metal Libraries** are a suite of foundational .NET packages for building modern, production-ready applications. They cover dependency injection, mediator-pattern request dispatching, utilities, test-data generation, authentication, and HTTP endpoint generation - designed to work independently or together across server, Blazor WebAssembly, and console project types.
 
+Browse the same markdown as a documentation site at [rwml.net](https://rwml.net).
+
 Release packages target **.NET 8, .NET 9, and .NET 10** unless a provider dependency has not caught up yet. For 2026.2, `RossWright.MetalCommand.Data.MySql` targets .NET 8 and .NET 9 because Pomelo's EF Core 9 provider constrains `Microsoft.EntityFrameworkCore.Relational` to EF Core 9 and produces NuGet dependency warnings when forced into the EF Core 10 graph. All extension methods live in the `RossWright` namespace (global-usings friendly).
 
 ---

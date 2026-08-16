@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Redirecting to RWML docs</title>
+  <script>
+    const path = location.pathname.replace(/^\/+/, "");
+    location.replace("/#/" + (path || "README.md") + location.search);
+  </script>
+</head>
+<body>
+  <p>Redirecting to <a href="/#/README.md">rwml.net docs</a>.</p>
+</body>
+</html>

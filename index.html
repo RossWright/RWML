@@ -4,26 +4,75 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ross Wright Metal Libraries</title>
-  <style>
-    body { font-family: "Segoe UI", system-ui, sans-serif; margin: 0; background: #111418; color: #ececec; }
-    main { max-width: 44rem; margin: 0 auto; padding: 3rem 1.25rem 4rem; }
-    h1 { font-size: 1.75rem; font-weight: 650; margin: 0 0 0.35rem; }
-    .sub { color: #9aa3ad; margin: 0 0 1.5rem; }
-    p { line-height: 1.55; }
-    a { color: #c4a574; }
-    ul { line-height: 1.6; }
-  </style>
+  <meta name="description" content="Ross Wright Metal Libraries: .NET foundations for dependency injection, mediator dispatch, HTTP endpoints, authentication, and console apps.">
+  <meta name="theme-color" content="#0b0d11">
+  <meta property="og:title" content="Ross Wright Metal Libraries">
+  <meta property="og:description" content=".NET foundations from Pross Co. Documentation is rendered from the markdown in the RWML repository.">
+  <meta property="og:url" content="https://rwml.net/">
+  <meta property="og:type" content="website">
+  <link rel="canonical" href="https://rwml.net/">
+  <link rel="icon" href="site/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="site/styles.css">
 </head>
 <body>
-  <main>
-    <h1>Ross Wright Metal Libraries</h1>
-    <p class="sub">.NET foundations from Pross Co.</p>
-    <p>A suite of packages for dependency injection, mediator-style commands, utilities, auth, and HTTP endpoints — usable on their own or together, on server, Blazor WebAssembly, and console.</p>
-    <p>Packages target .NET 8, 9, and 10 (with a few provider exceptions called out in the docs).</p>
-    <ul>
-      <li><a href="https://github.com/RossWright/RWML">Source and README on GitHub</a></li>
-      <li>Namespaces: <code>RossWright</code> and <code>RossWright.Messaging</code></li>
-    </ul>
-  </main>
+  <a class="skip-link" href="#content">Skip to content</a>
+  <div class="app">
+    <header class="topbar">
+      <button class="nav-toggle" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Open documentation menu">
+        <span></span><span></span><span></span>
+      </button>
+      <a class="brand" href="#/README.md">
+        <img src="site/favicon.svg" width="28" height="28" alt="">
+        <span class="brand-mark">RWML</span>
+        <span class="brand-sub">Metal Libraries</span>
+      </a>
+      <button class="search-open" type="button" data-open-search>
+        <span>Search docs</span>
+        <kbd>Ctrl</kbd><kbd>K</kbd>
+      </button>
+      <nav class="top-links" aria-label="Project links">
+        <a href="https://github.com/RossWright/RWML">GitHub</a>
+        <a href="https://www.nuget.org/profiles/RossWright">NuGet</a>
+      </nav>
+    </header>
+
+    <aside class="sidebar" id="sidebar">
+      <p class="sidebar-kicker">Documentation</p>
+      <p class="sidebar-note">Rendered live from repository markdown.</p>
+      <nav id="nav" class="nav" aria-label="Docs"></nav>
+    </aside>
+
+    <div class="workspace">
+      <article id="content" class="doc" tabindex="-1"></article>
+      <aside class="toc-wrap" aria-label="On this page">
+        <p class="toc-kicker">On this page</p>
+        <nav id="toc"></nav>
+        <a class="edit-link" id="edit-link" hidden target="_blank" rel="noopener">View on GitHub</a>
+      </aside>
+    </div>
+  </div>
+
+  <div class="search-overlay" id="search-overlay" hidden>
+    <div class="search-panel" role="dialog" aria-modal="true" aria-labelledby="search-label">
+      <p id="search-label" class="search-label">Search documentation</p>
+      <input id="search-input" type="search" placeholder="Recipes, APIs, package READMEs…" autocomplete="off" spellcheck="false">
+      <ul id="search-results"></ul>
+      <p class="search-hint">Esc to close · Enter to open</p>
+    </div>
+  </div>
+
+  <div class="backdrop" id="backdrop" hidden></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/languages/csharp.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/languages/xml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/languages/bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/languages/json.min.js"></script>
+  <script src="site/app.js"></script>
 </body>
 </html>
