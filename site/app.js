@@ -491,7 +491,7 @@
       closeNav();
       if (heading) {
         requestAnimationFrame(() => document.getElementById(heading)?.scrollIntoView());
-      } else contentEl.focus({ preventScroll: true });
+      }
     } catch (err) {
       renderedPath = "";
       contentEl.innerHTML = isFilePreview()
